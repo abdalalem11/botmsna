@@ -5,7 +5,6 @@ from datetime import datetime
 from telethon.tl import functions, types
 
 from .. import JmdB, jmubot, Tepthon_cmd
-
 from . import BOTLOG, BOTLOG_CHATID
 
 LOGS = logging.getLogger(__name__)
@@ -28,173 +27,204 @@ class AFK:
 AFK_ = AFK()
 
 
-@Tepthon_cmd(outgoing=True, edited=False)
+def get_afk_time():
+    if not AFK_.afk_star:
+        return "0 ثانية"
+
+    end = datetime.now().replace(microsecond=0)
+    total = end - AFK_.afk_star
+    seconds = int(total.total_seconds())
+
+    d = seconds // (24 * 3600)
+    seconds %= 24 * 3600
+
+    h = seconds // 3600
+    seconds %= 3600
+
+    m = seconds // 60
+    s = seconds % 60
+
+    if d > 0:
+        return f"{d} يوم {h} ساعة {m} دقيقة {s} ثانية"
+    elif h > 0:
+        return f"{h} ساعة {m} دقيقة {s} ثانية"
+    elif m > 0:
+        return f"{m} دقيقة {s} ثانية"
+
+    return f"{s} ثانية"
+
+
+# =========================
+# إلغاء السليب عند إرسال رسالة
+# =========================
+
+@Tepthon_cmd(
+    pattern="",
+    outgoing=True,
+    edited=False,
+)
 async def set_not_afk(event):
-    if AFK_.afk_on is False:
+    if not AFK_.afk_on:
         return
 
-    back_alive = datetime.now()
-    AFK_.afk_end = back_alive.replace(microsecond=0)
+    endtime = get_afk_time()
+    current_message = event.message.message or ""
 
-    if AFK_.afk_star != {}:
-        total_afk_time = AFK_.afk_end - AFK_.afk_star
-        time = int(total_afk_time.seconds)
+    # تجاهل رسائل تشغيل السليب نفسها
+    if "سليب" in current_message or "#afk" in current_message:
+        return
 
-        d = time // (24 * 3600)
-        time %= 24 * 3600
+    if not AFK_.USERAFK_ON:
+        return
 
-        h = time // 3600
-        time %= 3600
-
-        m = time // 60
-        time %= 60
-
-        s = time
-
-        endtime = ""
-
-        if d > 0:
-            endtime += f"{d} يوم {h} ساعة {m} دقيقة {s} ثانية"
-        elif h > 0:
-            endtime += f"{h} ساعة {m} دقيقة {s} ثانية"
-        else:
-            endtime += (
-                f"{m} دقيقة {s} ثانية"
-                if m > 0
-                else f"{s} ثانية"
-            )
-
-    current_message = event.message.message
-
-    if (("afk" not in current_message) or ("#afk" not in current_message)) and (
-        "on" in AFK_.USERAFK_ON
-    ):
+    try:
         shite = await event.client.send_message(
             event.chat_id,
-            "**الان اعمل بشكل طبيعي\nلقد كان امر السيلب مفعل منذ "
-            + endtime
-            + "**",
+            f"**الان اعمل بشكل طبيعي\n"
+            f"لقد كان امر السليب مفعل منذ {endtime}**",
         )
 
         AFK_.USERAFK_ON = {}
         AFK_.afk_time = None
+        AFK_.afk_on = False
+        AFK_.afk_type = None
+        AFK_.reason = None
+        AFK_.media_afk = None
+        AFK_.msg_link = False
 
         await asyncio.sleep(5)
-        await shite.delete()
 
-        AFK_.afk_on = False
+        try:
+            await shite.delete()
+        except Exception:
+            pass
 
         if BOTLOG:
             await event.client.send_message(
                 BOTLOG_CHATID,
-                "⌔∮ انتهاء امر السليب \n"
-                + "**⌔∮ تم تعطيله والرجوع للوضع الطبيعي كان مفعل لـ"
-                + endtime
-                + "**",
+                f"⌔∮ انتهاء امر السليب\n"
+                f"⌔∮ تم تعطيله والرجوع للوضع الطبيعي\n"
+                f"كان مفعلًا لمدة {endtime}",
             )
 
+    except Exception as e:
+        LOGS.error(f"خطأ في إلغاء السليب: {e}")
+
+
+# =========================
+# الرد على الأشخاص أثناء السليب
+# =========================
 
 @Tepthon_cmd(
+    pattern="",
     incoming=True,
     func=lambda e: bool(e.mentioned or e.is_private),
     edited=False,
 )
 async def on_afk(event):
-    if AFK_.afk_on is False:
+    if not AFK_.afk_on or not AFK_.USERAFK_ON:
         return
 
-    back_alivee = datetime.now()
-    AFK_.afk_end = back_alivee.replace(microsecond=0)
+    sender = await event.get_sender()
 
-    if AFK_.afk_star != {}:
-        total_afk_time = AFK_.afk_end - AFK_.afk_star
-        time = int(total_afk_time.seconds)
+    if not sender:
+        return
 
-        d = time // (24 * 3600)
-        time %= 24 * 3600
+    if getattr(sender, "bot", False):
+        return
 
-        h = time // 3600
-        time %= 3600
-
-        m = time // 60
-        time %= 60
-
-        s = time
-
-        endtime = ""
-
-        if d > 0:
-            endtime += f"{d} ايام {h} ساعات {m} دقائق {s} ثانية"
-        elif h > 0:
-            endtime += f"{h} ساعة {m} دقائق {s} ثانية"
-        else:
-            endtime += (
-                f"{m} دقائق {s} ثانية"
-                if m > 0
-                else f"{s} من الثواني"
-            )
-
-    current_message_text = event.message.message.lower()
+    current_message_text = (event.message.message or "").lower()
 
     if "مؤقت" in current_message_text or "#afk" in current_message_text:
         return False
 
-    if not await event.get_sender():
-        return
+    endtime = get_afk_time()
 
-    if AFK_.USERAFK_ON and not (await event.get_sender()).bot:
-        msg = None
+    msg = None
 
-        if AFK_.afk_type == "media":
-            if AFK_.reason:
-                message_to_reply = (
-                    f"⪼ انا الان في حالة عدم الاتصال منذ\n"
-                    f"{endtime}\n"
-                    f"السبب : {AFK_.reason}"
-                )
-            else:
-                message_to_reply = (
-                    f"⪼ انا الان في حالة عدم الاتصال منذ\n"
-                    f"{endtime}"
-                )
+    # =========================
+    # سليب ميديا
+    # =========================
 
-            if event.chat_id:
-                msg = await event.reply(
-                    message_to_reply,
-                    file=AFK_.media_afk.media,
-                )
+    if AFK_.afk_type == "media":
+        if AFK_.reason:
+            message_to_reply = (
+                f"⪼ انا الان في حالة عدم الاتصال منذ\n"
+                f"{endtime}\n"
+                f"السبب : {AFK_.reason}"
+            )
+        else:
+            message_to_reply = (
+                f"⪼ انا الان في حالة عدم الاتصال منذ\n"
+                f"{endtime}"
+            )
 
-        elif AFK_.afk_type == "text":
-            if AFK_.msg_link and AFK_.reason:
-                message_to_reply = (
-                    f"⪼ انا الان في حالة عدم الاتصال منذ .\n\n"
-                    f"{endtime}\n"
-                    f"السبب : {AFK_.reason}"
-                )
-            elif AFK_.reason:
-                message_to_reply = (
-                    f"⪼انا الان في حالة عدم الاتصال منذ .\n\n"
-                    f"{endtime}\n"
-                    f"السبب : {AFK_.reason}"
-                )
-            else:
-                message_to_reply = (
-                    f"⪼ انا الان في حالة عدم الاتصال منذ.\n\n"
-                    f"{endtime}"
-                )
-
-            if event.chat_id:
+        if event.chat_id:
+            try:
+                if AFK_.media_afk and AFK_.media_afk.media:
+                    msg = await event.reply(
+                        message_to_reply,
+                        file=AFK_.media_afk.media,
+                    )
+                else:
+                    msg = await event.reply(message_to_reply)
+            except Exception as e:
+                LOGS.error(f"خطأ في إرسال ميديا AFK: {e}")
                 msg = await event.reply(message_to_reply)
 
-        if event.chat_id in AFK_.last_afk_message:
-            await AFK_.last_afk_message[event.chat_id].delete()
+    # =========================
+    # سليب نصي
+    # =========================
 
-        AFK_.last_afk_message[event.chat_id] = msg
+    elif AFK_.afk_type == "text":
+        if AFK_.reason:
+            message_to_reply = (
+                f"⪼ انا الان في حالة عدم الاتصال منذ\n\n"
+                f"{endtime}\n"
+                f"السبب : {AFK_.reason}"
+            )
+        else:
+            message_to_reply = (
+                f"⪼ انا الان في حالة عدم الاتصال منذ\n\n"
+                f"{endtime}"
+            )
 
-        if event.is_private:
+        if event.chat_id:
+            msg = await event.reply(message_to_reply)
+
+    # =========================
+    # حذف الرد السابق في نفس المحادثة
+    # =========================
+
+    if msg is not None:
+        try:
+            if event.chat_id in AFK_.last_afk_message:
+                old_msg = AFK_.last_afk_message[event.chat_id]
+
+                if old_msg:
+                    await old_msg.delete()
+
+            AFK_.last_afk_message[event.chat_id] = msg
+
+        except Exception as e:
+            LOGS.info(f"تعذر حذف رسالة AFK القديمة: {e}")
+
+    # الخاص لا يدخل إلى سجل المجموعات
+    if event.is_private:
+        return
+
+    # =========================
+    # سجل الرسالة في مجموعة اللوج
+    # =========================
+
+    try:
+        hmm = await event.get_chat()
+
+        if not hasattr(Config, "PM_LOGGER_GROUP_ID"):
             return
 
-        hmm = await event.get_chat()
+        if not Config.PM_LOGGER_GROUP_ID:
+            return
 
         if Config.PM_LOGGER_GROUP_ID == -100:
             return
@@ -206,180 +236,70 @@ async def on_afk(event):
         except Exception as e:
             LOGS.info(str(e))
 
-        messaget = media_type(event)
+        try:
+            messaget = media_type(event)
+        except Exception:
+            messaget = None
 
-        resalt = f" \n<b>المجموعة : </b><code>{hmm.title}</code>"
+        resalt = (
+            f"<b>المجموعة :</b> "
+            f"<code>{getattr(hmm, 'title', 'غير معروف')}</code>"
+        )
 
         if full is not None:
-            resalt += (
-                f"\n<b>المرسل : </b> "
-                f"{_format.htmlmentionuser(full.first_name, full.id)}"
-            )
+            try:
+                resalt += (
+                    f"\n<b>المرسل :</b> "
+                    f"{_format.htmlmentionuser(full.first_name, full.id)}"
+                )
+            except Exception:
+                resalt += (
+                    f"\n<b>المرسل :</b> "
+                    f"<code>{full.id}</code>"
+                )
 
-        if messaget is not None:
+        if messaget:
             resalt += (
-                f"\n<b>نوع الرسالة : </b><code>{messaget}</code>"
+                f"\n<b>نوع الرسالة :</b> "
+                f"<code>{messaget}</code>"
             )
         else:
             resalt += (
-                f"\n<b>الرسالة : </b>{event.message.message}"
+                f"\n<b>الرسالة :</b> "
+                f"{event.message.message or ''}"
             )
+
+        # استخراج رقم المجموعة بشكل صحيح للرابط
+        chat_id = str(event.chat_id)
+
+        if chat_id.startswith("-100"):
+            chat_id = chat_id[4:]
 
         resalt += (
-            f"\n<b>رابط الرسالة: </b>"
-            f"<a href = 'https://t.me/c/{hmm.id}/{event.message.id}'>"
-            f" الرابط</a>"
+            f"\n<b>رابط الرسالة :</b> "
+            f"<a href='https://t.me/c/{chat_id}/{event.message.id}'>"
+            f"الرابط</a>"
         )
 
-        if not event.is_private:
-            await event.client.send_message(
-                Config.PM_LOGGER_GROUP_ID,
-                resalt,
-                parse_mode="html",
-                link_preview=False,
-            )
+        await event.client.send_message(
+            Config.PM_LOGGER_GROUP_ID,
+            resalt,
+            parse_mode="html",
+            link_preview=False,
+        )
+
+    except Exception as e:
+        LOGS.error(f"خطأ في سجل AFK: {e}")
 
 
-@Tepthon_cmd(pattern="سليب(?:\s|$)([\s\S]*)")
+# =========================
+# تشغيل السليب النصي
+# الأمر: سليب
+# =========================
+
+@Tepthon_cmd(
+    pattern="سليب(?:\\s|$)([\\s\\S]*)"
+)
 async def _(event):
     AFK_.USERAFK_ON = {}
-    AFK_.afk_time = None
-    AFK_.last_afk_message = {}
-    AFK_.afk_end = {}
-    AFK_.afk_type = "text"
-
-    start_1 = datetime.now()
-    AFK_.afk_on = True
-    AFK_.afk_star = start_1.replace(microsecond=0)
-
-    if not AFK_.USERAFK_ON:
-        input_str = event.pattern_match.group(1)
-
-        if ";" in input_str:
-            msg, mlink = input_str.split(";", 1)
-            AFK_.reason = f"[{msg.strip()}]({mlink.strip()})"
-            AFK_.msg_link = True
-        else:
-            AFK_.reason = input_str
-            AFK_.msg_link = False
-
-        last_seen_status = await event.client(
-            functions.account.GetPrivacyRequest(
-                types.InputPrivacyKeyStatusTimestamp()
-            )
-        )
-
-        if isinstance(
-            last_seen_status.rules,
-            types.PrivacyValueAllowAll,
-        ):
-            AFK_.afk_time = datetime.now()
-
-        AFK_.USERAFK_ON = f"on: {AFK_.reason}"
-
-        if AFK_.reason:
-            await edit_delete(
-                event,
-                f"⪼ انا الان في حالة عدم الاتصال بسبب\n{AFK_.reason}",
-                5,
-            )
-        else:
-            await edit_delete(
-                event,
-                "⪼ انا الان في حالة عدم الاتصال",
-                5,
-            )
-
-        if BOTLOG:
-            if AFK_.reason:
-                await event.client.send_message(
-                    BOTLOG_CHATID,
-                    f"⪼ وضع السليب \n"
-                    f"تم تشغيل وضع السليب، والسبب هو \n"
-                    f"{AFK_.reason}",
-                )
-            else:
-                await event.client.send_message(
-                    BOTLOG_CHATID,
-                    "⪼ وضع السليب \n"
-                    "تم تشغيل وضع السليب، بدون ذكر اي سبب",
-                )
-
-
-@Tepthon_cmd(pattern="سليب_ميديا(?:\s|$)([\s\S]*)")
-async def _(event):
-    reply = await event.get_reply_message()
-
-    media_t = media_type(reply)
-
-    if media_t == "Sticker" or not media_t:
-        return await edit_or_reply(
-            event,
-            "⪼ امر السليب : الرجاء قم بالرد على الصورة بالامر ",
-        )
-
-    if not BOTLOG:
-        return await edit_or_reply(
-            event,
-            "⪼ لإستخدام هذا الامر يجب اضافة متغير PRIVATE_GROUP_BOT_API_ID ",
-        )
-
-    AFK_.USERAFK_ON = {}
-    AFK_.afk_time = None
-    AFK_.last_afk_message = {}
-    AFK_.afk_end = {}
-    AFK_.media_afk = None
-    AFK_.afk_type = "media"
-
-    start_1 = datetime.now()
-    AFK_.afk_on = True
-    AFK_.afk_star = start_1.replace(microsecond=0)
-
-    if not AFK_.USERAFK_ON:
-        input_str = event.pattern_match.group(1)
-        AFK_.reason = input_str
-
-        last_seen_status = await event.client(
-            functions.account.GetPrivacyRequest(
-                types.InputPrivacyKeyStatusTimestamp()
-            )
-        )
-
-        if isinstance(
-            last_seen_status.rules,
-            types.PrivacyValueAllowAll,
-        ):
-            AFK_.afk_time = datetime.now()
-
-        AFK_.USERAFK_ON = f"on: {AFK_.reason}"
-
-        if AFK_.reason:
-            await edit_delete(
-                event,
-                f"⪼ انا الان في حالة عدم الاتصال بسبب\n{AFK_.reason}",
-                5,
-            )
-        else:
-            await edit_delete(
-                event,
-                "انا الان في حالة عدم الاتصال",
-                5,
-            )
-
-        AFK_.media_afk = await reply.forward_to(
-            BOTLOG_CHATID
-        )
-
-        if AFK_.reason:
-            await event.client.send_message(
-                BOTLOG_CHATID,
-                f"⪼ وضع السليب \n"
-                f"تم تشغيل وضع السليب، والسبب هو \n"
-                f"{AFK_.reason}",
-            )
-        else:
-            await event.client.send_message(
-                BOTLOG_CHATID,
-                "⪼ وضع السليب \n"
-                "تم تشغيل وضع السليب، بدون ذكر اي سبب",
-            )
+   

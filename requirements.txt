@@ -1,7 +1,7 @@
 telethon
 requests
 tabulate
-ipaddress 
+ipaddress
 redis
 telegraph
 python-decouple

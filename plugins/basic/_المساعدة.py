@@ -105,11 +105,11 @@ def get_doc_from_module(name, type=""):
             return get_from_funcs(mod, name)
 
         msg = (
-            f"**⎆ أوامـر سورس تيبثـون المتاحة في قائمـة {name}**\n\n"
+            f"**⎆ أوامـر سورس النسر الاسود المتاحة في قائمـة {name}**\n\n"
         )
 
         msg += mod.__doc__.format(i=HNDLR)
-        msg += "\n ©️ @Tepthon"
+        msg += "\n ©️ @SSSTlF"
 
         return msg
 
@@ -137,7 +137,7 @@ def get_from_funcs(mod, name):
         return False
 
     msg = (
-        f"**⎆ أوامـر سورس تيبثـون المتاحة في قائمـة {name}**"
+        f"**⎆ أوامـر سورس النسر التسود المتاحة في قائمـة {name}**"
     )
 
     for cmd in funcs:
@@ -146,7 +146,7 @@ def get_from_funcs(mod, name):
             f"{cmd[1].__doc__.format(*list(HNDLR * len(funcs)))}"
         )
 
-    msg += "\n ©️ @Tepthon"
+    msg += "\n ©️ @SSSTlF"
 
     return msg
 
@@ -172,7 +172,7 @@ def get_doc(module, type=""):
 
     if _get_info and (cmds := _get_info.get("cmds")):
         msg = (
-            f"**⎆ أوامـر سورس تيبثـون المتاحة في قائمـة {module}**"
+            f"**⎆ أوامـر سورس النسر الاسود المتاحة في قائمـة {module}**"
         )
 
         for cmd in cmds:
@@ -192,7 +192,7 @@ def get_doc(module, type=""):
             msg += f"- \n{HNDLR}{cmd}\n"
 
     if msg:
-        msg += "\n ©️ @Tepthon"
+        msg += "\n ©️ @SSSTlF"
 
     return msg
 
@@ -298,7 +298,7 @@ async def help_func(moh):
     _strings = {
         "basic": (
             "**⎆ مجموعة المساعدة: "
-            "[اضغط هنا](t.me/Tepthon_Support)**\n"
+            "[اضغط هنا](t.me/SSSTlFh)**\n"
             "**❃ مالك الحساب هو: {}.\n"
             "❃ عدد القوائم الموجودة: {}**"
         ),
@@ -310,13 +310,13 @@ async def help_func(moh):
         ),
         "fun": (
             "**⎆ مجموعة المساعدة: "
-            "[اضغط هنا](t.me/Tepthon_Support)**\n"
+            "[اضغط هنا](t.me/SSSTlFh)**\n"
             "**❃ مالك الحساب هو: {}.\n"
             "❃ عدد قوائم الموجودة: {}**"
         ),
         "group": (
             "**⎆ مجموعة المساعدة: "
-            "[اضغط هنا](t.me/Tepthon_Support)**\n"
+            "[اضغط هنا](t.me/SSSTlFh)**\n"
             "**❃ مالك الحساب هو: {}.\n"
             "❃ عدد القوائم الموجودة: {}**"
         ),
@@ -341,7 +341,7 @@ async def help_func(moh):
 async def opner(event):
     try:
         await event.edit(
-            "**⎆ القائمة الرئيسية لـ أوامر سورس تيبـثون**\n"
+            "**⎆ القائمة الرئيسية لـ أوامر سورس النسرالاسود**\n"
             "**⎆ مالك الحساب هو: {}.\n"
             "⎆ عدد القوائم الموجودة: {}**".format(
                 jmubot.full_name,

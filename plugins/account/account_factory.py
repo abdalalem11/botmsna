@@ -18,57 +18,28 @@ from telethon.errors import (
     SessionPasswordNeededError,
 )
 
-# مهم جدًا:
-# لا تستخدم .. هنا لأن الملف داخل plugins/account
-from Tepthon import Tepthon_cmd
-from Tepthon.config import Var
-from Tepthon.core.managers import edit_delete, edit_or_reply
+# نفس طريقة Plugins الرسمية في Tepthon
+from .. import Tepthon_cmd
+from ..config import Var
+from ..core.managers import edit_delete, edit_or_reply
 
 
 LOGS = logging.getLogger(__name__)
 
-
-# =========================================================
-# إعداد مجلد الجلسات
-# =========================================================
-
 SESSIONS_DIR = Path("database/account_sessions")
 SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 
-
-# =========================================================
-# العمليات المعلقة
-# sender_id -> بيانات العملية
-# =========================================================
-
 _pending = {}
-
-# مدة العملية المعلقة 10 دقائق
 PENDING_TIMEOUT = 600
 
 
-# =========================================================
-# API
-# =========================================================
-
 def _get_api_credentials():
     try:
-        api_id = int(Var.API_ID)
-        api_hash = str(Var.API_HASH).strip()
-
-        if not api_id or not api_hash:
-            return None, None
-
-        return api_id, api_hash
-
+        return int(Var.API_ID), str(Var.API_HASH).strip()
     except Exception:
         LOGS.exception("Failed to load API credentials")
         return None, None
 
-
-# =========================================================
-# أدوات
-# =========================================================
 
 def _clean_phone(phone):
     return (
@@ -85,10 +56,7 @@ def _session_name(phone):
 
 
 def _get_pending(event):
-    try:
-        return _pending.get(event.sender_id)
-    except Exception:
-        return None
+    return _pending.get(event.sender_id)
 
 
 async def _cleanup_pending(sender_id):
@@ -119,11 +87,6 @@ async def _expire_pending(sender_id):
         if sender_id in _pending:
             await _cleanup_pending(sender_id)
 
-            LOGS.info(
-                "Account installation expired: %s",
-                sender_id,
-            )
-
     except asyncio.CancelledError:
         pass
 
@@ -133,8 +96,6 @@ async def _expire_pending(sender_id):
 
 # =========================================================
 # مصنع الحسابات
-# الأمر:
-# مصنع +966xxxxxxxxx
 # =========================================================
 
 @Tepthon_cmd(pattern=r"مصنع(?:\s+|$)([\s\S]*)")
@@ -145,31 +106,21 @@ async def account_factory(event):
     if not api_id or not api_hash:
         return await edit_or_reply(
             event,
-            "❌ لم يتم العثور على API_ID و API_HASH.\n\n"
-            "تأكد من إعداد:\n"
-            "`Var.API_ID`\n"
-            "`Var.API_HASH`"
+            "❌ API_ID أو API_HASH غير موجود.\n\n"
+            "تأكد من إعدادات Tepthon."
         )
 
     sender_id = event.sender_id
 
-    if not sender_id:
-        return await edit_or_reply(
-            event,
-            "❌ تعذر تحديد المستخدم."
-        )
-
-    # منع عمليتين في نفس الوقت
     if sender_id in _pending:
         return await edit_or_reply(
             event,
-            "⏳ لديك عملية تنصيب معلقة بالفعل.\n\n"
-            "أكمل العملية الحالية أولًا."
+            "⏳ لديك عملية تنصيب معلقة بالفعل."
         )
 
-    arg = event.pattern_match.group(1).strip()
+    phone = event.pattern_match.group(1).strip()
 
-    if not arg:
+    if not phone:
         return await edit_or_reply(
             event,
             "🛠 **مصنع الحسابات**\n\n"
@@ -179,11 +130,7 @@ async def account_factory(event):
             "`مصنع +966512345678`"
         )
 
-    phone = _clean_phone(arg)
-
-    # =====================================================
-    # التحقق من الرقم
-    # =====================================================
+    phone = _clean_phone(phone)
 
     if not phone.startswith("+"):
         return await edit_or_reply(
@@ -199,12 +146,6 @@ async def account_factory(event):
             "❌ رقم الهاتف غير صحيح."
         )
 
-    if len(phone) < 8:
-        return await edit_or_reply(
-            event,
-            "❌ رقم الهاتف قصير جدًا."
-        )
-
     session_name = _session_name(phone)
     session_path = SESSIONS_DIR / session_name
 
@@ -215,12 +156,7 @@ async def account_factory(event):
     )
 
     try:
-
         await client.connect()
-
-        # =================================================
-        # هل الحساب مسجل مسبقًا؟
-        # =================================================
 
         if await client.is_user_authorized():
 
@@ -243,10 +179,6 @@ async def account_factory(event):
                 f"📱 الرقم: `{phone}`"
             )
 
-        # =================================================
-        # إرسال كود Telegram
-        # =================================================
-
         sent = await client.send_code_request(phone)
 
         _pending[sender_id] = {
@@ -257,21 +189,21 @@ async def account_factory(event):
             "task": None,
         }
 
-        task = asyncio.create_task(
+        _pending[sender_id]["task"] = asyncio.create_task(
             _expire_pending(sender_id)
         )
-
-        _pending[sender_id]["task"] = task
 
         return await edit_or_reply(
             event,
             "📲 **تم إرسال كود Telegram.**\n\n"
-            "أرسل الكود بهذا الشكل:\n"
+            "أرسل الكود:\n"
             "`كود 12345`\n\n"
-            "⚠️ لا تشارك كود الدخول مع أي شخص."
+            "⚠️ لا تشارك كود تسجيل الدخول."
         )
 
     except ApiIdInvalidError:
+
+        await _cleanup_pending(sender_id)
 
         try:
             await client.disconnect()
@@ -324,28 +256,20 @@ async def account_factory(event):
 
 
 # =========================================================
-# إدخال كود Telegram
-# الأمر:
-# كود 12345
+# كود Telegram
 # =========================================================
 
 @Tepthon_cmd(pattern=r"كود(?:\s+|$)([\s\S]*)")
 async def account_code(event):
 
     code = event.pattern_match.group(1).strip()
+    code = code.replace(" ", "").replace("-", "")
 
     if not code:
         return await edit_or_reply(
             event,
-            "❌ أرسل الكود هكذا:\n"
-            "`كود 12345`"
+            "❌ أرسل الكود:\n`كود 12345`"
         )
-
-    code = (
-        code
-        .replace(" ", "")
-        .replace("-", "")
-    )
 
     if not code.isdigit():
         return await edit_or_reply(
@@ -358,21 +282,16 @@ async def account_code(event):
     if not item:
         return await edit_or_reply(
             event,
-            "❌ لا توجد عملية تنصيب معلقة لك.\n\n"
-            "ابدأ باستخدام:\n"
+            "❌ لا توجد عملية تنصيب معلقة.\n\n"
+            "ابدأ بـ:\n"
             "`مصنع +رقم`"
         )
 
     client = item["client"]
 
     try:
-
         if not client.is_connected():
             await client.connect()
-
-        # =================================================
-        # تسجيل الدخول
-        # =================================================
 
         await client.sign_in(
             phone=item["phone"],
@@ -404,15 +323,15 @@ async def account_code(event):
             f"🆔 ID: `{me.id}`\n"
             f"🔗 المعرف: `{username}`\n"
             f"📱 الرقم: `{item['phone']}`\n\n"
-            "🔐 تم حفظ جلسة الحساب محليًا."
+            "🔐 تم حفظ الجلسة محليًا."
         )
 
     except SessionPasswordNeededError:
 
         return await edit_or_reply(
             event,
-            "🔐 **الحساب محمي بالتحقق بخطوتين.**\n\n"
-            "أرسل كلمة مرور 2FA بهذا الشكل:\n"
+            "🔐 **الحساب محمي بـ 2FA**\n\n"
+            "أرسل كلمة المرور:\n"
             "`كلمة_مرور كلمة_المرور`"
         )
 
@@ -454,8 +373,6 @@ async def account_code(event):
 
 # =========================================================
 # كلمة مرور 2FA
-# الأمر:
-# كلمة_مرور ********
 # =========================================================
 
 @Tepthon_cmd(pattern=r"كلمة_مرور(?:\s+|$)([\s\S]*)")
@@ -466,7 +383,7 @@ async def account_password(event):
     if not password:
         return await edit_or_reply(
             event,
-            "❌ أرسل كلمة المرور هكذا:\n"
+            "❌ أرسل كلمة المرور:\n"
             "`كلمة_مرور ********`"
         )
 
@@ -475,19 +392,14 @@ async def account_password(event):
     if not item:
         return await edit_or_reply(
             event,
-            "❌ لا توجد عملية تنصيب معلقة لك."
+            "❌ لا توجد عملية تنصيب معلقة."
         )
 
     client = item["client"]
 
     try:
-
         if not client.is_connected():
             await client.connect()
-
-        # =================================================
-        # تسجيل الدخول باستخدام 2FA
-        # =================================================
 
         await client.sign_in(
             password=password
@@ -517,7 +429,7 @@ async def account_password(event):
             f"🆔 ID: `{me.id}`\n"
             f"🔗 المعرف: `{username}`\n"
             f"📱 الرقم: `{item['phone']}`\n\n"
-            "🔐 تم حفظ جلسة الحساب محليًا."
+            "🔐 تم حفظ الجلسة محليًا."
         )
 
     except PasswordHashInvalidError:
@@ -547,8 +459,6 @@ async def account_password(event):
 
 # =========================================================
 # عرض الحسابات
-# الأمر:
-# حسابات
 # =========================================================
 
 @Tepthon_cmd(pattern=r"حسابات$")
@@ -563,19 +473,15 @@ async def list_accounts(event):
         if not sessions:
             return await edit_or_reply(
                 event,
-                "📂 **لا توجد حسابات مثبتة حاليًا.**"
+                "📂 لا توجد حسابات مثبتة حاليًا."
             )
 
-        text = "📋 **الحسابات المثبتة محليًا:**\n\n"
+        text = "📋 **الحسابات المثبتة:**\n\n"
 
         for index, session in enumerate(sessions, 1):
-            text += (
-                f"{index}. `{session.stem}`\n"
-            )
+            text += f"{index}. `{session.stem}`\n"
 
-        text += (
-            "\n🔐 ملفات الجلسات محفوظة محليًا فقط."
-        )
+        text += "\n🔐 الجلسات محفوظة محليًا."
 
         return await edit_or_reply(
             event,
@@ -594,20 +500,16 @@ async def list_accounts(event):
 
 
 # =========================================================
-# إلغاء العملية
-# الأمر:
-# الغاء_المصنع
+# إلغاء المصنع
 # =========================================================
 
 @Tepthon_cmd(pattern=r"الغاء_المصنع$")
 async def cancel_factory(event):
 
-    item = _get_pending(event)
-
-    if not item:
+    if not _get_pending(event):
         return await edit_or_reply(
             event,
-            "❌ لا توجد عملية تنصيب معلقة."
+            "❌ لا توجد عملية معلقة."
         )
 
     await _cleanup_pending(event.sender_id)

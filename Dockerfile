@@ -1,18 +1,22 @@
-FROM python:3.10-slim-buster
+FROM python:3.10-slim-bookworm
 
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y git curl python3-pip ffmpeg mediainfo p7zip && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    ffmpeg \
+    mediainfo \
+    p7zip-full && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - && \
-    apt-get install -y nodejs && \
-    npm install -g npm@8.19.4 && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN python3 -m pip install --upgrade pip
+WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip3 install --disable-pip-version-check --default-timeout=100 -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-CMD ["python3","-m","Tepthon"]
+COPY . .
+
+CMD ["python", "main.py"]

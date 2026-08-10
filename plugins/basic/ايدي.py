@@ -16,9 +16,17 @@ async def get_target_user(event):
     if event.reply_to_msg_id:
         reply = await event.get_reply_message()
         if reply and reply.sender_id:
-            return await event.client.get_entity(reply.sender_id)
+            try:
+                return await event.client.get_entity(reply.sender_id)
+            except Exception:
+                return None
 
-    user_input = event.pattern_match.group(1)
+    user_input = None
+
+    try:
+        user_input = event.pattern_match.group(1)
+    except Exception:
+        user_input = None
 
     if not user_input:
         return await event.client.get_me()
@@ -28,7 +36,10 @@ async def get_target_user(event):
     if event.message.entities:
         for entity in event.message.entities:
             if isinstance(entity, MessageEntityMentionName):
-                return await event.client.get_entity(entity.user_id)
+                try:
+                    return await event.client.get_entity(entity.user_id)
+                except Exception:
+                    pass
 
     try:
         if user_input.lstrip("-").isdigit():
@@ -43,9 +54,12 @@ async def get_target_user(event):
 async def fetch_info(user, event):
     """إحضار معلومات المستخدم."""
 
-    full_user = await event.client(
-        GetFullUserRequest(user.id)
-    )
+    try:
+        full_user = await event.client(
+            GetFullUserRequest(user.id)
+        )
+    except Exception:
+        full_user = None
 
     try:
         photos = await event.client(
@@ -56,7 +70,7 @@ async def fetch_info(user, event):
                 limit=100,
             )
         )
-        photos_count = photos.count
+        photos_count = getattr(photos, "count", 0) or 0
     except Exception:
         photos_count = 0
 
@@ -71,11 +85,16 @@ async def fetch_info(user, event):
         else "لا يوجد معرف"
     )
 
-    user_bio = (
-        full_user.full_user.about
-        if full_user.full_user.about
-        else "لا توجد نبذة"
-    )
+    try:
+        user_bio = (
+            full_user.full_user.about
+            if full_user
+            and full_user.full_user
+            and full_user.full_user.about
+            else "لا توجد نبذة"
+        )
+    except Exception:
+        user_bio = "لا توجد نبذة"
 
     me = await event.client.get_me()
 
@@ -85,38 +104,52 @@ async def fetch_info(user, event):
         rank = "⌁ العضو 𓅫 ⌁"
 
     photo = None
+    photo_path = None
 
     try:
+        download_dir = getattr(
+            Config,
+            "TMP_DOWNLOAD_DIRECTORY",
+            "./temp/",
+        )
+
         os.makedirs(
-            Config.TMP_DOWNLOAD_DIRECTORY,
+            download_dir,
             exist_ok=True,
+        )
+
+        photo_path = os.path.join(
+            download_dir,
+            f"{user_id}.jpg",
         )
 
         photo = await event.client.download_profile_photo(
             user_id,
-            Config.TMP_DOWNLOAD_DIRECTORY
-            + str(user_id)
-            + ".jpg",
+            photo_path,
             download_big=True,
         )
+
     except Exception:
         photo = None
 
+    safe_name = html.escape(first_name)
+    safe_username = html.escape(username)
     safe_bio = html.escape(user_bio)
 
     caption = (
         "✛━━━━━━━━━━━━━✛\n"
-        f"<b>•❃╎الاسـم    ⇠ </b> {first_name}\n"
-        f"<b>•❃╎المعـرف  ⇠ </b> {username}\n"
+        f"<b>•❃╎الاسـم    ⇠ </b> {safe_name}\n"
+        f"<b>•❃╎المعـرف  ⇠ </b> {safe_username}\n"
         f"<b>•❃╎الايـدي   ⇠ </b> <code>{user_id}</code>\n"
         f"<b>•❃╎الرتبـــه  ⇠ </b> {rank}\n"
         f"<b>•❃╎الصـور   ⇠ </b> {photos_count}\n"
-        f'<b>•❃╎الحساب ⇠ </b> <a href="tg://user?id={user_id}">{first_name}</a>\n'
+        f'<b>•❃╎الحساب ⇠ </b> '
+        f'<a href="tg://user?id={user_id}">{safe_name}</a>\n'
         f"<b>•❃╎البايـو    ⇠ </b> {safe_bio}\n"
         "✛━━━━━━━━━━━━━✛"
     )
 
-    return photo, caption
+    return photo, photo_path, caption
 
 
 @Tepthon_cmd(
@@ -138,9 +171,51 @@ async def user_id_command(event):
         )
 
     try:
-        photo, caption = await fetch_info(
+        photo, photo_path, caption = await fetch_info(
             user,
             event,
         )
 
-       
+        if photo and os.path.exists(photo):
+            await event.client.send_file(
+                event.chat_id,
+                photo,
+                caption=caption,
+                parse_mode="html",
+            )
+
+            try:
+                await loading.delete()
+            except Exception:
+                pass
+
+            try:
+                if photo_path and os.path.exists(photo_path):
+                    os.remove(photo_path)
+            except Exception:
+                pass
+
+            try:
+                if event.out:
+                    await event.delete()
+            except Exception:
+                pass
+
+        else:
+            await edit_or_reply(
+                loading,
+                caption,
+                parse_mode="html",
+                link_preview=False,
+            )
+
+    except Exception as error:
+        try:
+            await edit_or_reply(
+                loading,
+                f"**- حدث خطأ أثناء جلب معلومات المستخدم ❌**\n\n"
+                f"<code>{html.escape(str(error))}</code>",
+                parse_mode="html",
+            )
+        except Exception:
+            pass

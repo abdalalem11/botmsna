@@ -92,8 +92,8 @@ async def group_ub():
         try:
             group_id = await jmubot(
                 CreateChannelRequest(
-                    title="مجموعـة الحفـظ - تيبثـون",
-                    about="- هذه هي مجموعـة حفظ الأحـداث والسجلات التي قد تتلقاها- @Tepthon .",
+                    title="مجموعـة الحفـظ - النسر الاسود ",
+                    about="- هذه هي مجموعـة حفظ الأحـداث والسجلات التي قد تتلقاها- @SSSTlFd .",
                     megagroup=True,
                 ),
             )

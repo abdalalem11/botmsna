@@ -19,7 +19,7 @@ def __load(func, plugin, key, single):
         LOGS.error(f"❃ لم يتم تثبيت الملف {plugin} الخطأ:  '{er.name}' ")
         return
     except Exception as exc:
-        LOGS.error(f"تيبثون - {key} - خطأ - {plugin}")
+        LOGS.error(f"سورس النسرالاسود - {key} - خطأ - {plugin}")
         LOGS.exception(exc)
         return
     PLUGINS[modl.__name__] = modl

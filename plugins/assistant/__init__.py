@@ -14,7 +14,7 @@ def get_back_button(name):
 @in_pattern(owner=True, func=lambda x: not x.text)
 async def inline_alive(o):
     TLINK = inline_pic() or "https://telegra.ph/file/78d4b06400957403fec24.jpg"
-    MSG = "• ** سورس تيبثون •**"
+    MSG = "• ** سورس النسرالاسود •**"
     WEB0 = InputWebDocument(
         "https://telegra.ph/file/78d4b06400957403fec24.jpg", 0, "image/jpg", []
     )
@@ -26,13 +26,13 @@ async def inline_alive(o):
             buttons=[
                 [
                     Button.url(
-                        "قناة السورس", url="https://T.me/Tepthon"
+                        "قناة السورس", url="https://T.me/SSSTlFd"
                     ),
-                    Button.url("مجموعة المساعدة", url="t.me/Tepthon_Support"),
+                    Button.url("مجموعة المساعدة", url="t.me/SSSTlFd"),
                 ],
             ],
-            title="سورس تيبثون",
-            description="Tepthon | تيبثون",
+            title="سورس النسر الاسود ",
+            description="Tepthon | سورس النسر ",
             url=TLINK,
             thumb=WEB0,
             content=InputWebDocument(TLINK, 0, "image/jpg", []),
@@ -42,6 +42,6 @@ async def inline_alive(o):
         RES,
         private=True,
         cache_time=300,
-        switch_pm="👥 Tepthon",
+        switch_pm="👥 النسر",
         switch_pm_param="start",
     )

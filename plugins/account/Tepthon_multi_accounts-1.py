@@ -2,13 +2,22 @@
 
 """
 Tepthon Multi Accounts
-تشغيل الحسابات الإضافية كـ Tepthon Userbot مستقل.
+======================
+
+تشغيل الحسابات الإضافية كـ Tepthon مستقل.
 
 الأوامر:
+
 .تنصيب
 .تنصيب SESSION
 .حسابات
 .حذف حساب account1
+
+مهم:
+الحساب الإضافي يتم تشغيله في Process مستقل.
+يتم تمرير Session الخاصة به إلى متغير SESSION
+قبل استيراد Tepthon، حتى يقوم Tepthon بإنشاء
+jmubot باستخدام الحساب الإضافي نفسه.
 """
 
 from __future__ import annotations
@@ -27,24 +36,74 @@ from telethon.sessions.string import CURRENT_VERSION
 from .. import JmdB, Tepthon_cmd, LOGS
 
 
+# =========================================================
+# CHILD FLAG
+# =========================================================
+
 CHILD_FLAG = "TEPTHON_MULTI_ACCOUNT_CHILD"
 
-ACCOUNTS_FILE = Path("database") / "extra_accounts.json"
-LOG_DIR = Path("database") / "extra_accounts_logs"
 
-ACCOUNTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+# =========================================================
+# الملفات
+# =========================================================
+
+ACCOUNTS_FILE = (
+    Path("database")
+    / "extra_accounts.json"
+)
+
+LOG_DIR = (
+    Path("database")
+    / "extra_accounts_logs"
+)
+
+ACCOUNTS_FILE.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+LOG_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
 
 _children = {}
 
 
+# =========================================================
+# الرسائل الرئيسية فقط
+# =========================================================
+
 if os.getenv(CHILD_FLAG) != "1":
 
-    LOGS.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    LOGS.info("✅ تم تحميل نظام الحسابات الإضافية")
-    LOGS.info("✅ Multi Accounts جاهز")
-    LOGS.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    try:
 
+        LOGS.info(
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        )
+
+        LOGS.info(
+            "✅ تم تحميل Tepthon_multi_accounts-1.py"
+        )
+
+        LOGS.info(
+            "✅ نظام الحسابات الإضافية جاهز"
+        )
+
+        LOGS.info(
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        )
+
+    except Exception:
+        pass
+
+
+# =========================================================
+# كل الكود الرئيسي
+# =========================================================
+
+if os.getenv(CHILD_FLAG) != "1":
 
     # =====================================================
     # قراءة الحسابات
@@ -86,7 +145,9 @@ if os.getenv(CHILD_FLAG) != "1":
             exist_ok=True
         )
 
-        temp = ACCOUNTS_FILE.with_suffix(".tmp")
+        temp = ACCOUNTS_FILE.with_suffix(
+            ".tmp"
+        )
 
         temp.write_text(
             json.dumps(
@@ -103,7 +164,7 @@ if os.getenv(CHILD_FLAG) != "1":
 
 
     # =====================================================
-    # المالك
+    # التحقق من المالك
     # =====================================================
 
     def _is_owner(event):
@@ -140,21 +201,24 @@ if os.getenv(CHILD_FLAG) != "1":
         if not session:
             return False
 
+        # StringSession الحديثة
         if session.startswith(
             CURRENT_VERSION
         ):
 
-            return len(session) == 353
+            return len(session) >= 300
 
+        # نسخ StringSession القديمة
         return len(session) in {
             351,
+            353,
             356,
             362
         }
 
 
     # =====================================================
-    # Log
+    # مسار Log
     # =====================================================
 
     def _log_path(name):
@@ -166,102 +230,34 @@ if os.getenv(CHILD_FLAG) != "1":
 
 
     # =====================================================
-    # API
+    # Child Script
     # =====================================================
 
-    def _get_api():
-
-        try:
-
-            from ..config import Var
-
-            api_id = getattr(
-                Var,
-                "API_ID",
-                None
-            )
-
-            api_hash = getattr(
-                Var,
-                "API_HASH",
-                None
-            )
-
-            if api_id and api_hash:
-
-                return (
-                    int(api_id),
-                    str(api_hash)
-                )
-
-        except Exception as exc:
-
-            LOGS.error(
-                f"❌ خطأ API config: {exc}"
-            )
-
-        api_id = os.getenv(
-            "API_ID"
-        )
-
-        api_hash = os.getenv(
-            "API_HASH"
-        )
-
-        if api_id and api_hash:
-
-            return (
-                int(api_id),
-                str(api_hash)
-            )
-
-        raise RuntimeError(
-            "API_ID/API_HASH غير موجودين"
-        )
-
-
-    # =====================================================
-    # كود الحساب الفرعي
-    # =====================================================
-
-    def _child_script():
+    def _build_child_script():
 
         return r'''
+# -*- coding: utf-8 -*-
+
 import asyncio
-import importlib
 import os
 import sys
 import traceback
 
-from telethon.sessions import StringSession
-
 
 async def main():
 
-    name = os.environ.get(
+    name = os.getenv(
         "TEPTHON_ACCOUNT_NAME",
         "account"
     )
 
-    api_id = os.environ.get(
-        "TEPTHON_API_ID"
-    )
-
-    api_hash = os.environ.get(
-        "TEPTHON_API_HASH"
-    )
-
-    session = os.environ.get(
-        "TEPTHON_SESSION"
-    )
+    session = os.getenv(
+        "SESSION",
+        ""
+    ).strip()
 
     print(
-        "==========================================",
-        flush=True
-    )
-
-    print(
-        f"🚀 [{name}] تشغيل Tepthon",
+        "",
         flush=True
     )
 
@@ -270,55 +266,67 @@ async def main():
         flush=True
     )
 
-    if not api_id:
-        print(
-            "❌ API_ID غير موجود",
-            flush=True
-        )
-        return 10
+    print(
+        f"🚀 [{name}] بدء تشغيل Tepthon للحساب الإضافي",
+        flush=True
+    )
 
-    if not api_hash:
-        print(
-            "❌ API_HASH غير موجود",
-            flush=True
-        )
-        return 11
+    print(
+        "==========================================",
+        flush=True
+    )
+
+
+    # =================================================
+    # التأكد من Session
+    # =================================================
 
     if not session:
-        print(
-            "❌ Session غير موجودة",
-            flush=True
-        )
-        return 12
-
-    try:
-
-        api_id = int(api_id)
-
-    except Exception:
 
         print(
-            "❌ API_ID غير صالح",
+            f"❌ [{name}] SESSION غير موجودة",
             flush=True
         )
 
-        return 13
+        return 10
 
 
     # =================================================
-    # استيراد TepthonClient بدون تشغيل __main__
+    # مهم جدًا:
+    #
+    # لا ننشئ TelegramClient هنا.
+    #
+    # نضع Session في البيئة ثم نستورد Tepthon.
+    #
+    # Tepthon/__init__.py سيقرأ:
+    #
+    # Var.SESSION
+    #
+    # ثم ينشئ:
+    #
+    # jmubot = TepthonClient(...)
+    #
+    # وبالتالي jmubot سيكون الحساب الإضافي.
     # =================================================
 
     try:
 
-        from Tepthon.core.client import TepthonClient
-        from Tepthon.core.session import both_session
-        from Tepthon.core.logger import LOGS
+        print(
+            f"🔌 [{name}] جاري تحميل Tepthon...",
+            flush=True
+        )
 
-    except Exception as exc:
+        import Tepthon
 
         print(
-            f"❌ فشل استيراد TepthonClient: {exc}",
+            f"✅ [{name}] تم تحميل Tepthon",
+            flush=True
+        )
+
+    except SystemExit as exc:
+
+        print(
+            f"❌ [{name}] Tepthon أنهى العملية: {exc}",
             flush=True
         )
 
@@ -326,49 +334,20 @@ async def main():
 
         return 30
 
-
-    # =================================================
-    # إنشاء Client للحساب الإضافي
-    # =================================================
-
-    try:
-
-        session_obj = both_session(
-            session,
-            LOGS,
-            _exit=False
-        )
-
-        if session_obj is None:
-
-            session_obj = StringSession(
-                session
-            )
-
-        print(
-            f"🔌 [{name}] إنشاء TepthonClient...",
-            flush=True
-        )
-
-        client = TepthonClient(
-            session=session_obj,
-            api_id=api_id,
-            api_hash=api_hash,
-            log_attempt=True,
-            exit_on_error=False,
-            device_model="Tepthon Multi Account",
-            app_version="1.0.0",
-        )
-
-        print(
-            f"✅ [{name}] تم إنشاء TepthonClient",
-            flush=True
-        )
-
     except Exception as exc:
 
         print(
-            f"❌ [{name}] فشل إنشاء العميل: {exc}",
+            f"❌ [{name}] فشل تحميل Tepthon",
+            flush=True
+        )
+
+        print(
+            f"نوع الخطأ: {type(exc).__name__}",
+            flush=True
+        )
+
+        print(
+            f"الخطأ: {exc}",
             flush=True
         )
 
@@ -378,88 +357,81 @@ async def main():
 
 
     # =================================================
-    # استبدال jmubot للحساب الفرعي
+    # الحصول على العميل الإضافي
     # =================================================
 
     try:
 
-        tep_module = importlib.import_module(
-            "Tepthon"
-        )
+        client = Tepthon.jmubot
 
-        tep_module.jmubot = client
-        tep_module.jmthon_bot = client
+        if client is None:
+
+            print(
+                f"❌ [{name}] jmubot غير موجود",
+                flush=True
+            )
+
+            return 32
 
         print(
-            f"✅ [{name}] تم ربط jmubot بالحساب الإضافي",
+            f"✅ [{name}] تم إنشاء jmubot للحساب الإضافي",
             flush=True
         )
 
     except Exception as exc:
 
         print(
-            f"⚠️ [{name}] تعذر ربط jmubot: {exc}",
+            f"❌ [{name}] فشل الحصول على jmubot",
             flush=True
         )
 
-
-    # =================================================
-    # تحميل Plugins
-    # =================================================
-
-    try:
-
-        from Tepthon.load_plug import load
-
         print(
-            f"📦 [{name}] جاري تحميل Plugins...",
-            flush=True
-        )
-
-        load(
-            log=True,
-            key=f"الحساب الإضافي {name}",
-            path="plugins"
-        )
-
-        print(
-            f"✅ [{name}] تم تحميل Plugins",
-            flush=True
-        )
-
-    except Exception as exc:
-
-        print(
-            f"❌ [{name}] فشل تحميل Plugins: {exc}",
+            f"{type(exc).__name__}: {exc}",
             flush=True
         )
 
         traceback.print_exc()
 
-        return 40
+        return 33
 
 
     # =================================================
-    # بيانات الحساب
+    # التحقق من تسجيل الدخول
     # =================================================
 
     try:
 
-        me = await client.get_me()
+        me = client.me
 
-        if not me:
+        if me is None:
+
+            me = await client.get_me()
+
+        if me is None:
 
             print(
                 f"❌ [{name}] لم يتم العثور على الحساب",
                 flush=True
             )
 
-            return 41
+            return 34
+
 
         username = (
             f"@{me.username}"
             if me.username
             else "بدون username"
+        )
+
+        first_name = (
+            me.first_name
+            or ""
+        )
+
+
+        print(
+            "",
+            flush=True
         )
 
         print(
@@ -468,12 +440,12 @@ async def main():
         )
 
         print(
-            f"✅ [{name}] الحساب يعمل",
+            f"✅ [{name}] تم تسجيل الدخول بنجاح",
             flush=True
         )
 
         print(
-            f"الاسم: {me.first_name or ''}",
+            f"الاسم: {first_name}",
             flush=True
         )
 
@@ -492,25 +464,104 @@ async def main():
             flush=True
         )
 
+    except Exception as exc:
+
+        print(
+            f"❌ [{name}] فشل التحقق من الحساب",
+            flush=True
+        )
+
+        print(
+            f"{type(exc).__name__}: {exc}",
+            flush=True
+        )
+
+        traceback.print_exc()
+
+        return 35
+
+
+    # =================================================
+    # تحميل Plugins
+    # =================================================
+
+    try:
+
+        print(
+            f"📦 [{name}] جاري تحميل Plugins...",
+            flush=True
+        )
+
+        from Tepthon.load_plug import load
+
+        # تحميل جميع Plugins الموجودة في plugins.
+        #
+        # بما أن jmubot في Tepthon أصبح الحساب الإضافي،
+        # فإن الـplugins التي تستورد jmubot من Tepthon
+        # ستحصل على Client الحساب الإضافي.
+
+        load(
+            log=True,
+            key=f"الحساب الإضافي {name}",
+            path="plugins"
+        )
+
+        print(
+            f"✅ [{name}] تم تحميل Plugins",
+            flush=True
+        )
 
     except Exception as exc:
 
         print(
-            f"❌ [{name}] فشل جلب بيانات الحساب: {exc}",
+            f"❌ [{name}] فشل تحميل Plugins",
             flush=True
         )
 
-        return 42
+        print(
+            f"نوع الخطأ: {type(exc).__name__}",
+            flush=True
+        )
+
+        print(
+            f"الخطأ: {exc}",
+            flush=True
+        )
+
+        traceback.print_exc()
+
+        return 40
 
 
     # =================================================
-    # تشغيل الحساب
+    # تشغيل مستمر
     # =================================================
 
     print(
-        f"🟢 [{name}] Tepthon يعمل الآن...",
+        "",
         flush=True
     )
+
+    print(
+        "==========================================",
+        flush=True
+    )
+
+    print(
+        f"🟢 [{name}] الحساب الإضافي يعمل الآن",
+        flush=True
+    )
+
+    print(
+        f"🟢 [{name}] Tepthon Userbot جاهز",
+        flush=True
+    )
+
+    print(
+        "==========================================",
+        flush=True
+    )
+
 
     try:
 
@@ -518,12 +569,20 @@ async def main():
 
     except KeyboardInterrupt:
 
-        pass
+        print(
+            f"⚠️ [{name}] تم إيقاف الحساب",
+            flush=True
+        )
 
     except Exception as exc:
 
         print(
-            f"❌ [{name}] توقف بسبب: {exc}",
+            f"❌ [{name}] توقف الحساب",
+            flush=True
+        )
+
+        print(
+            f"{type(exc).__name__}: {exc}",
             flush=True
         )
 
@@ -534,23 +593,30 @@ async def main():
     finally:
 
         try:
+
             await client.disconnect()
+
         except Exception:
             pass
 
+
     return 0
 
+
+# =========================================================
+# Main
+# =========================================================
 
 if __name__ == "__main__":
 
     try:
 
-        result = asyncio.run(
+        code = asyncio.run(
             main()
         )
 
         sys.exit(
-            result
+            code
         )
 
     except KeyboardInterrupt:
@@ -560,7 +626,27 @@ if __name__ == "__main__":
     except Exception as exc:
 
         print(
-            f"FATAL: {type(exc).__name__}: {exc}",
+            "",
+            flush=True
+        )
+
+        print(
+            "==========================================",
+            flush=True
+        )
+
+        print(
+            "❌ FATAL ERROR",
+            flush=True
+        )
+
+        print(
+            f"{type(exc).__name__}: {exc}",
+            flush=True
+        )
+
+        print(
+            "==========================================",
             flush=True
         )
 
@@ -571,7 +657,7 @@ if __name__ == "__main__":
 
 
     # =====================================================
-    # تشغيل حساب
+    # تشغيل الحساب
     # =====================================================
 
     def _start_account(
@@ -579,21 +665,17 @@ if __name__ == "__main__":
         session
     ):
 
-        api_id, api_hash = _get_api()
-
         env = os.environ.copy()
 
-        env[
-            "TEPTHON_API_ID"
-        ] = str(api_id)
+        # =================================================
+        # أهم سطر في الحل:
+        #
+        # Tepthon/config.py يقرأ SESSION من البيئة.
+        # لذلك نضع Session الحساب الإضافي هنا قبل
+        # استيراد Tepthon داخل العملية الفرعية.
+        # =================================================
 
-        env[
-            "TEPTHON_API_HASH"
-        ] = str(api_hash)
-
-        env[
-            "TEPTHON_SESSION"
-        ] = session
+        env["SESSION"] = session
 
         env[
             "TEPTHON_ACCOUNT_NAME"
@@ -602,6 +684,22 @@ if __name__ == "__main__":
         env[
             CHILD_FLAG
         ] = "1"
+
+
+        # =================================================
+        # منع استخدام Session الحساب الأساسي
+        # =================================================
+
+        # لا نحتاج API_ID/API_HASH هنا لأن Tepthon
+        # يقرأهما بنفسه من Tepthon.config.Var.
+        #
+        # config.py في السورس يستخدم python-decouple
+        # لقراءة API_ID وAPI_HASH وSESSION.
+
+
+        # =================================================
+        # Log
+        # =================================================
 
         log_file = _log_path(
             name
@@ -614,55 +712,73 @@ if __name__ == "__main__":
             buffering=1
         )
 
+
         log_handle.write(
             "\n\n"
             "==========================================\n"
-            f"START: {name}\n"
+            f"START ACCOUNT: {name}\n"
             "==========================================\n"
         )
 
-        proc = subprocess.Popen(
-            [
-                sys.executable,
-                "-u",
-                "-c",
-                _child_script()
-            ],
-            cwd=os.getcwd(),
-            env=env,
-            stdin=subprocess.DEVNULL,
-            stdout=log_handle,
-            stderr=subprocess.STDOUT,
-            start_new_session=True
-        )
+
+        try:
+
+            proc = subprocess.Popen(
+                [
+                    sys.executable,
+                    "-u",
+                    "-c",
+                    _build_child_script()
+                ],
+                cwd=os.getcwd(),
+                env=env,
+                stdin=subprocess.DEVNULL,
+                stdout=log_handle,
+                stderr=subprocess.STDOUT,
+                start_new_session=True
+            )
+
+        except Exception:
+
+            try:
+                log_handle.close()
+            except Exception:
+                pass
+
+            raise
+
 
         _children[name] = (
             proc,
             log_handle
         )
 
+
         LOGS.info(
-            f"🚀 تم تشغيل {name}"
+            f"🚀 تم بدء العملية للحساب {name}"
         )
+
 
         return proc
 
 
     # =====================================================
-    # إيقاف
+    # إيقاف الحساب
     # =====================================================
 
     def _stop_account(name):
 
-        item = _children.pop(
+        value = _children.pop(
             name,
             None
         )
 
-        if not item:
+        if not value:
             return
 
-        proc, handle = item
+
+        proc, log_handle = value
+
 
         if proc.poll() is None:
 
@@ -676,36 +792,48 @@ if __name__ == "__main__":
             except Exception:
 
                 try:
+
                     proc.terminate()
+
                 except Exception:
                     pass
 
+
         try:
-            handle.close()
+
+            log_handle.close()
+
         except Exception:
             pass
 
 
     # =====================================================
-    # حالة
+    # حالة الحساب
     # =====================================================
 
-    def _state(name):
+    def _child_state(name):
 
-        item = _children.get(
+        value = _children.get(
             name
         )
 
-        if not item:
+        if not value:
+
             return "🟡 محفوظ"
 
-        code = item[0].poll()
+
+        proc = value[0]
+
+        code = proc.poll()
+
 
         if code is None:
+
             return "🟢 العملية تعمل"
 
+
         return (
-            f"🔴 متوقف ({code})"
+            f"🔴 متوقف (exit={code})"
         )
 
 
@@ -713,76 +841,95 @@ if __name__ == "__main__":
     # طلب Session
     # =====================================================
 
-    async def _ask_session(event):
+    async def _ask_for_session(event):
 
         future = (
             event.client.loop.create_future()
         )
 
-        async def receiver(
-            reply
+
+        async def receive(
+            reply_event
         ):
 
             if (
-                reply.sender_id
+                reply_event.sender_id
                 != event.sender_id
             ):
+
                 return
+
 
             if (
-                reply.chat_id
+                reply_event.chat_id
                 != event.chat_id
             ):
+
                 return
 
+
             text = (
-                reply.raw_text or ""
+                reply_event.raw_text
+                or ""
             ).strip()
+
 
             if not future.done():
 
                 future.set_result(
                     (
                         text,
-                        reply
+                        reply_event
                     )
                 )
 
+
         event.client.add_event_handler(
-            receiver,
+            receive,
             events.NewMessage(
                 chats=event.chat_id,
                 from_users=event.sender_id
             )
         )
 
+
         try:
 
             await event.eor(
-                "**⎆ أرسل Session String الآن.**\n\n"
+                "**⎆ أرسل Session String للحساب الجديد الآن.**\n\n"
+                "بعد الإرسال سيتم تشغيل الحساب مباشرة.\n\n"
                 "⚠️ استخدم Session لحساب تملكه فقط."
             )
 
-            text, reply = await asyncio.wait_for(
-                future,
-                timeout=120
+
+            text, reply_event = (
+                await asyncio.wait_for(
+                    future,
+                    timeout=120
+                )
             )
 
+
             try:
-                await reply.delete()
+
+                await reply_event.delete()
+
             except Exception:
                 pass
 
+
             return text
+
 
         except asyncio.TimeoutError:
 
             return None
 
+
         finally:
 
             event.client.remove_event_handler(
-                receiver
+                receive
             )
 
 
@@ -796,46 +943,70 @@ if __name__ == "__main__":
     async def install_account(event):
 
         if not _is_owner(event):
+
             return
+
 
         session = (
             event.pattern_match.group(1)
             or ""
         ).strip()
 
+
         if not session:
 
-            session = await _ask_session(
+            session = await _ask_for_session(
                 event
             )
+
 
         if not session:
 
             return await event.eor(
-                "**⎆ انتهى وقت الانتظار ❌**"
+                "**⎆ انتهى وقت انتظار الـSession ❌**"
             )
+
 
         if not _valid_session(
             session
         ):
 
             return await event.eor(
-                "**⎆ الـSession غير صحيحة ❌**"
+                "**⎆ الـSession غير صحيحة ❌**\n\n"
+                "تأكد أنها String Session صالحة."
             )
+
 
         accounts = _load_accounts()
 
-        for data in accounts.values():
+
+        # =================================================
+        # منع تكرار Session
+        # =================================================
+
+        for item in accounts.values():
+
+            if not isinstance(
+                item,
+                dict
+            ):
+
+                continue
+
 
             if (
-                isinstance(data, dict)
-                and data.get("session")
+                item.get("session")
                 == session
             ):
 
                 return await event.eor(
-                    "**⎆ الحساب مثبت مسبقاً.**"
+                    "**⎆ هذا الحساب مثبت مسبقاً.**"
                 )
+
+
+        # =================================================
+        # اسم الحساب
+        # =================================================
 
         index = 1
 
@@ -846,21 +1017,31 @@ if __name__ == "__main__":
 
             index += 1
 
+
         name = (
             f"account{index}"
         )
+
+
+        # =================================================
+        # حفظ
+        # =================================================
 
         accounts[name] = {
             "session": session
         }
 
+
         _save_accounts(
             accounts
         )
 
-        msg = await event.eor(
-            f"**⎆ جاري تشغيل `{name}` 🚀**"
+
+        status = await event.eor(
+            f"**⎆ جاري تشغيل `{name}` 🚀**\n\n"
+            "⏳ جاري تشغيل Tepthon للحساب..."
         )
+
 
         try:
 
@@ -869,50 +1050,67 @@ if __name__ == "__main__":
                 session
             )
 
+
+            # =================================================
+            # انتظار النتيجة
+            # =================================================
+
             for _ in range(20):
 
                 await asyncio.sleep(
                     1
                 )
 
+
                 if proc.poll() is not None:
+
                     break
+
 
             code = proc.poll()
 
+
             if code is not None:
 
-                return await msg.edit(
+                return await status.edit(
                     f"**⎆ `{name}` توقف ❌**\n\n"
                     f"Exit: `{code}`\n\n"
-                    f"📄 `{_log_path(name)}`"
+                    f"📄 Log:\n"
+                    f"`{_log_path(name)}`"
                 )
 
-            return await msg.edit(
+
+            return await status.edit(
                 f"**⎆ `{name}` يعمل الآن 🟢**\n\n"
                 "تم تشغيل Tepthon للحساب الإضافي.\n\n"
-                f"📄 `{_log_path(name)}`"
+                f"📄 Log:\n"
+                f"`{_log_path(name)}`"
             )
 
+
         except Exception as exc:
+
 
             _stop_account(
                 name
             )
+
 
             accounts.pop(
                 name,
                 None
             )
 
+
             _save_accounts(
                 accounts
             )
 
-            return await msg.edit(
-                f"**⎆ فشل التشغيل ❌**\n\n"
-                f"`{type(exc).__name__}`\n"
-                f"`{exc}`"
+
+            return await status.edit(
+                "**⎆ فشل تشغيل الحساب ❌**\n\n"
+                f"النوع: `{type(exc).__name__}`\n"
+                f"الخطأ: `{exc}`"
             )
 
 
@@ -926,9 +1124,12 @@ if __name__ == "__main__":
     async def list_accounts(event):
 
         if not _is_owner(event):
+
             return
 
+
         accounts = _load_accounts()
+
 
         if not accounts:
 
@@ -936,17 +1137,20 @@ if __name__ == "__main__":
                 "**⎆ لا توجد حسابات إضافية.**"
             )
 
+
         lines = [
             "**⎆ الحسابات الإضافية:**",
             ""
         ]
 
+
         for name in accounts:
 
             lines.append(
                 f"• `{name}` — "
-                f"{_state(name)}"
+                f"{_child_state(name)}"
             )
+
 
         await event.eor(
             "\n".join(lines)
@@ -954,7 +1158,7 @@ if __name__ == "__main__":
 
 
     # =====================================================
-    # حذف
+    # حذف حساب
     # =====================================================
 
     @Tepthon_cmd(
@@ -963,14 +1167,18 @@ if __name__ == "__main__":
     async def remove_account(event):
 
         if not _is_owner(event):
+
             return
+
 
         name = (
             event.pattern_match.group(1)
             or ""
         ).strip()
 
+
         accounts = _load_accounts()
+
 
         if (
             not name
@@ -982,18 +1190,22 @@ if __name__ == "__main__":
                 "`.حذف حساب account1`"
             )
 
+
         _stop_account(
             name
         )
+
 
         accounts.pop(
             name,
             None
         )
 
+
         _save_accounts(
             accounts
         )
+
 
         await event.eor(
             f"**⎆ تم حذف `{name}` وإيقافه ✅**"
@@ -1001,7 +1213,7 @@ if __name__ == "__main__":
 
 
     # =====================================================
-    # تشغيل تلقائي
+    # التشغيل التلقائي
     # =====================================================
 
     async def _auto_start():
@@ -1010,52 +1222,71 @@ if __name__ == "__main__":
             10
         )
 
+
         LOGS.info(
             "🔄 بدء فحص الحسابات الإضافية..."
         )
 
+
         accounts = _load_accounts()
+
 
         for name, data in list(
             accounts.items()
         ):
 
+
             if not isinstance(
                 data,
                 dict
             ):
+
                 continue
+
 
             session = data.get(
                 "session"
             )
 
+
             if not session:
+
                 continue
 
+
             if name in _children:
+
                 continue
+
 
             if not _valid_session(
                 session
             ):
 
                 LOGS.error(
-                    f"❌ Session غير صالحة: {name}"
+                    f"❌ Session غير صالحة للحساب {name}"
                 )
 
                 continue
 
+
             try:
+
+                LOGS.info(
+                    f"🚀 تشغيل الحساب المحفوظ: {name}"
+                )
+
 
                 proc = _start_account(
                     name,
                     session
                 )
 
+
                 await asyncio.sleep(
                     5
                 )
+
 
                 if proc.poll() is None:
 
@@ -1067,14 +1298,16 @@ if __name__ == "__main__":
 
                     LOGS.error(
                         f"❌ الحساب {name} توقف "
-                        f"exit={proc.poll()}"
+                        f"(exit={proc.poll()})"
                     )
+
 
             except Exception as exc:
 
                 LOGS.error(
-                    f"❌ {name}: {exc}"
+                    f"❌ فشل تشغيل {name}: {exc}"
                 )
+
 
         LOGS.info(
             "✅ انتهى فحص الحسابات الإضافية"
@@ -1082,7 +1315,7 @@ if __name__ == "__main__":
 
 
     # =====================================================
-    # مراقبة
+    # مراقبة العمليات
     # =====================================================
 
     async def _monitor():
@@ -1093,26 +1326,35 @@ if __name__ == "__main__":
                 30
             )
 
+
             for name, value in list(
                 _children.items()
             ):
 
-                proc, handle = value
+
+                proc, log_handle = value
 
                 code = proc.poll()
 
+
                 if code is None:
+
                     continue
+
 
                 LOGS.warning(
                     f"⚠️ الحساب {name} توقف "
                     f"(exit={code})"
                 )
 
+
                 try:
-                    handle.close()
+
+                    log_handle.close()
+
                 except Exception:
                     pass
+
 
                 _children.pop(
                     name,
@@ -1121,27 +1363,31 @@ if __name__ == "__main__":
 
 
     # =====================================================
-    # البداية
+    # تشغيل النظام
     # =====================================================
 
     try:
 
         loop = asyncio.get_event_loop()
 
+
         loop.create_task(
             _auto_start()
         )
+
 
         loop.create_task(
             _monitor()
         )
 
+
         LOGS.info(
             "✅ تم تشغيل نظام الحسابات الإضافية"
         )
 
+
     except Exception as exc:
 
         LOGS.error(
-            f"❌ فشل تشغيل Multi Accounts: {exc}"
+            f"❌ فشل تشغيل نظام الحسابات الإضافية: {exc}"
         )

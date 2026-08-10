@@ -20,7 +20,7 @@ if not jmubot.me.bot:
     jmdB.set_key("NAME", jmubot.full_name)
 
 
-LOGS.info("جاري تشغيل تيبثون...")
+LOGS.info("جاري تشغيل النسرالاسود...")
 
 
 # إعداد السورس
@@ -29,10 +29,10 @@ try:
 
     jmubot.loop.run_until_complete(main_process())
 
-    LOGS.info("تم إعداد إعدادات تيبثون ✅")
+    LOGS.info("تم إعداد إعدادات النسرالاسود ✅")
 
 except Exception as error:
-    LOGS.error(f"فشل إعداد تيبثون: {error}")
+    LOGS.error(f"فشل إعداد النسرالاسود: {error}")
     sys.exit(1)
 
 
@@ -60,7 +60,7 @@ jmubot.run_in_loop(load_plugins())
 LOGS.info(
     f"⏳ تم استغراق "
     f"{time_formatter((time.time() - start_time) * 1000)} "
-    f"ميللي ثانية لبدء تشغيل سورس تيبثون."
+    f"ميللي ثانية لبدء تشغيل سورس النسرالاسود."
 )
 
 

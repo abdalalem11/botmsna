@@ -75,10 +75,10 @@ UNS = "**⌔∮  لـقد أخبرتك ألّا تُـكـرر أرسـال ال
 NO_REPLY = "**⎆ يجب عليك الرد على المستخدم أو في الخاص**."
 
 
-UNAPPROVED_MSG = "**نظام حماية تيبثـون الخاص بـ {ON}!**\n\n{UND}\n\nلديك {warn}/{twarn} تحذيرات"
+UNAPPROVED_MSG = "**نظام حماية النسرالاسود الخاص بـ {ON}!**\n\n{UND}\n\nلديك {warn}/{twarn} تحذيرات"
 if jmdB.get_key("PM_TEXT"):
     UNAPPROVED_MSG = (
-        "**نظام حماية تيبثـون الخاص بـ {ON}!**\n\n"
+        "**نظام حماية النسرالاسود الخاص بـ {ON}!**\n\n"
         + jmdB.get_key("PM_TEXT")
         + "\n\nلديك {warn}/{twarn} تحذيرات"
     )
@@ -730,7 +730,7 @@ async def in_pm_ans(event):
     try:
         msg_ = WARN_MSGS[from_user]
     except KeyError:
-        msg_ = "**⌔∮ نظام حماية تيبثـون الخاص بـ {OWNER_NAME}**"
+        msg_ = "**⌔∮ نظام حماية النسرالاسود الخاص بـ {OWNER_NAME}**"
     wrns = f"{warns}/{WARNS}"
     buttons = [
         [
@@ -760,8 +760,8 @@ async def in_pm_ans(event):
             res = [
                 await event.builder.document(
                     res,
-                    title="نظام حماية تيبثون الأنلاين",
-                    description="~ @Tepthon",
+                    title="نظام حماية النسرالاسود الأنلاين",
+                    description="~ @SSSTlFd",
                     text=msg_,
                     buttons=buttons,
                     link_preview=False,
@@ -775,10 +775,10 @@ async def in_pm_ans(event):
             cont = types.InputWebDocument(PMPIC, 0, mime_type, [])
         res = [
             event.builder.article(
-                title="نظام حماية تيبثون الأنلاين",
+                title="نظام حماية النسرالاسود الأنلاين",
                 type=type,
                 text=msg_,
-                description="~ @Tepthon",
+                description="~ @SSSTlFd",
                 include_media=include_media,
                 buttons=buttons,
                 thumb=cont,

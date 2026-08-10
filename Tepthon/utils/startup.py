@@ -50,7 +50,7 @@ async def notify():
         BTTS = Button.inline("◙ اضغط هنـا للبدأ ◙", "initft_2")
         JmdB.set_key("FIRST_DEPLOY", True)
     else:
-        MSG = f"🌟 تنصيب سورس تيبثون اكتمل بنجاح! ☑️\n\n👤 **حساب المالك:** {inline_mention(jmubot.me)}\n🤖 **البوت المساعد:** @{tgbot.me.username}\n\n📩 نرحب بك في مجموعتنا! إذا كان لديك أي استفسارات فلا تتردد في السؤال!\n💬 **مجموعة المساعدة:** @SSSTlFd"
+        MSG = f"🌟 تنصيب سورس النسرالاسود اكتمل بنجاح! ☑️\n\n👤 **حساب المالك:** {inline_mention(jmubot.me)}\n🤖 **البوت المساعد:** @{tgbot.me.username}\n\n📩 نرحب بك في مجموعتنا! إذا كان لديك أي استفسارات فلا تتردد في السؤال!\n💬 **مجموعة المساعدة:** @SSSTlFd"
         BTTS, PHOTO = None, None
 
         if prev_spam := JmdB.get_key("LAST_UPDATE_LOG_SPAM"):

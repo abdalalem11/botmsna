@@ -107,7 +107,7 @@ def Tepthon_cmd(pattern=None, tgbot=tgbot, **kwargs):
                 time.sleep(fwerr.seconds + 10)
                 await jmubot.connect()
                 await tgbot.send_message(
-                    jmdB.get_config("LOG_CHAT"), "**⎆ سـورس تيبثون يعمل بنجاح مرة آخــرى**")
+                    jmdB.get_config("LOG_CHAT"), "**⎆ سـورس النسرالاسود يعمل بنجاح مرة آخــرى**")
                 return
             except ChatSendInlineForbiddenError:
                 return await eod(mirza, "**◙ اعـذرني مطوري لكن لا يمكنك استخدام هذا الأمر هنا لأن وضع الأنلاين مقفل**")

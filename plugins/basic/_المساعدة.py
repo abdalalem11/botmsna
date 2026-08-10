@@ -260,7 +260,7 @@ async def inline_handler(event):
         )
     else:
         result = await event.builder.article(
-            title="**⎆ قائمـة أوامر سورس تيبثـون:**",
+            title="**⎆ قائمـة أوامر سورس النسرالاسود:**",
             text=text,
             buttons=get_help_buttons(),
         )
@@ -304,7 +304,7 @@ async def help_func(moh):
         ),
         "account": (
             "**⎆ مجموعة المساعدة: "
-            "[اضغط هنا](t.me/Tepthon_Support)**\n"
+            "[اضغط هنا](t.me/SSSTlFd)**\n"
             "**❃ مالك الحساب هو: {}.\n"
             "❃ عدد قوائم الموجودة: {}**"
         ),
@@ -506,7 +506,7 @@ async def uptd_plugin(event):
             f"**⎆ القائمة {file} لا تحتـوي على شرح "
             f"في قائمة المساعدة حاليًّــا**"
         )
-        help_ += "\n© @Tepthon"
+        help_ += "\n© @SSSTlFd"
 
     buttons = []
 

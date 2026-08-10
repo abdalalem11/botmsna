@@ -9,7 +9,6 @@
 """
 
 import time
-from datetime import datetime
 from platform import python_version
 from random import choice
 
@@ -38,23 +37,27 @@ alive_txt = """
 PING_PIC = jmdB.get_key("PING_PIC") or "https://t.me/Tepthon/12?single"
 JM_TXT = "لا تحزن لأن الله معك ♥️"
 
-in_alive = (
-"{}\n\n"
-"❃ <b>إصدار النسرالاسود -></b> <code>{}</code>\n"
-"❃ <b>إصدار البايثون -></b> <code>{}</code>\n"
-"❃ <b>مدة التشغيل -></b> <code>{}</code>\n\n"
-"<b>قناة السورس @SSSTlFd</b>"
-)
+in_alive = """
+{}
 
-alive_1 = (
-"سورس النسرالاسود يعمل بنجاح ✅\n\n"
-"❃ مالك الحساب - {}\n"
-"❃ إصدار تيبثون - {}\n"
-"❃ مدة التشغيل - {}\n"
-"❃ إصدار البايثون - {}\n"
-"❃ إصدار التليثون - {}\n"
-"@SSSTlFd"
-)
+❃ <b>إصدار النسرالاسود -></b> <code>{}</code>
+❃ <b>إصدار البايثون -></b> <code>{}</code>
+❃ <b>مدة التشغيل -></b> <code>{}</code>
+
+<b>قناة السورس @SSSTlFd</b>
+"""
+
+alive_1 = """
+سورس النسرالاسود يعمل بنجاح ✅
+
+❃ مالك الحساب - {}
+❃ إصدار تيبثون - {}
+❃ مدة التشغيل - {}
+❃ إصدار البايثون - {}
+❃ إصدار التليثون - {}
+
+@SSSTlFd
+"""
 
 @callback("alive")
 async def alive(event):
@@ -94,8 +97,10 @@ if inline:
         uptime,
     )
 
-    if emoji := jmdB.get_key("ALIVE_EMOJI"):
+    emoji = jmdB.get_key("ALIVE_EMOJI")
+    if emoji:
         als = als.replace("❃", emoji)
+
 else:
     parse = markdown
     als = alive_1.format(
@@ -106,7 +111,8 @@ else:
         TELETHON_VERSION,
     )
 
-    if emoji := jmdB.get_key("ALIVE_EMOJI"):
+    emoji = jmdB.get_key("ALIVE_EMOJI")
+    if emoji:
         als = als.replace("❃", emoji)
 
 if pic:
@@ -164,10 +170,10 @@ als = in_alive.format(
     uptime,
 )
 
-if emoji := jmdB.get_key("ALIVE_EMOJI"):
+emoji = jmdB.get_key("ALIVE_EMOJI")
+if emoji:
     als = als.replace("❃", emoji)
 
-# إنشاء نسخة محلية حتى لا تتكرر الأزرار عند كل استخدام
 local_buttons = [row[:] for row in buttons]
 builder = e.builder
 
@@ -184,9 +190,10 @@ if pic:
                     buttons=local_buttons,
                 )
             ]
-
         else:
-            if bot_file := resolve_bot_file_id(pic):
+            bot_file = resolve_bot_file_id(pic)
+
+            if bot_file:
                 pic = bot_file
                 local_buttons.insert(
                     0,
@@ -233,7 +240,7 @@ try:
             f"<b><i>{JM_TXT}</i></b>\n"
             f"<code>┏━━━━━━━┓\n"
             f"┃ ✦ جاري قياس السرعة...\n"
-            f"┃ ✦ <b>{jmubot.me.first_name}</b>\n"
+            f"┃ ✦ {jmubot.me.first_name}\n"
             f"┗━━━━━━━┛</code>"
         ),
         parse_mode="html",
@@ -246,7 +253,7 @@ try:
         f"<b><i>{JM_TXT}</i></b>\n"
         f"<code>┏━━━━━━━┓\n"
         f"┃ ✦ {ms} ms\n"
-        f"┃ ✦ <b>{jmubot.me.first_name}</b>\n"
+        f"┃ ✦ {jmubot.me.first_name}\n"
         f"┗━━━━━━━┛</code>"
     )
 

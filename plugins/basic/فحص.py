@@ -1,29 +1,30 @@
 """
-❃ {i}فحص
-لـ عرض حالة سورس النسرالاسود والإصدار و وقت التشغيل
+❃ فحص
+لعرض حالة سورس النسرالاسود والإصدار ووقت التشغيل
 
 ❃ ملاحظة: يمكنك وضع أو تغيير الصورة من خلال البوت المساعد الخاص بك
 
-❃ {i}بنك
+❃ بنك
 أمر تجريبي لتجربة السورس
-
 """
 
-import os
+import time
+from datetime import datetime
 from platform import python_version
 from random import choice
-from datetime import datetime
-from Tepthon.config import version
+
+from Tepthon.config import version as TEPTHON_VERSION
 from telethon.errors import BotMethodInvalidError, ChatSendMediaForbiddenError
 from telethon.extensions import html, markdown
 from telethon.utils import resolve_bot_file_id
-from telethon.version import version
+from telethon.version import version as TELETHON_VERSION
+
 from .. import *
 
 buttons = [
 [
-Button.url("مجموعة المساعدة", "t.me/SSSTlFd"),
-Button.url("قناة السورس", "t.me/SSSTlFd"),
+Button.url("مجموعة المساعدة", "https://t.me/SSSTlFd"),
+Button.url("قناة السورس", "https://t.me/SSSTlFd"),
 ]
 ]
 
@@ -31,150 +32,239 @@ alive_txt = """
 سورس النسرالاسود يعمـل بنجـاح .. ✅
 
 ❃ إصدار تيبثون - {}
-❃ إصدار التليليثون - {}
+❃ إصدار التليثون - {}
 """
 
-PING_PIC = JmdB.get_key("PING_PIC") or "https://t.me/Tepthon/12?single"
+PING_PIC = jmdB.get_key("PING_PIC") or "https://t.me/Tepthon/12?single"
 JM_TXT = "لا تحزن لأن الله معك ♥️"
 
-in_alive = "{}\n\n❃ <b>إصدار النسرالاسود -><b> <code>{}</code>\n❃ <b>إصدار البايثون -></b> <code>{}</code>\n❃ <b>مدة التشغيل -></b> <code>{}</code>\n\n<b>قناة السورس @SSSTlFd</b>"
-alive_1 = "سورس النسرالاسود يعمل بنجاح ✅\n\n❃ مالك الحساب - {}\n❃ إصدار تيبثون - {}\n❃ مدة التشغيل - {}\n❃ إصدار البايثون - {}\n❃ إصدار التليثون - {}\n@SSSTlFd"
+in_alive = (
+"{}\n\n"
+"❃ <b>إصدار النسرالاسود -></b> <code>{}</code>\n"
+"❃ <b>إصدار البايثون -></b> <code>{}</code>\n"
+"❃ <b>مدة التشغيل -></b> <code>{}</code>\n\n"
+"<b>قناة السورس @SSSTlFd</b>"
+)
+
+alive_1 = (
+"سورس النسرالاسود يعمل بنجاح ✅\n\n"
+"❃ مالك الحساب - {}\n"
+"❃ إصدار تيبثون - {}\n"
+"❃ مدة التشغيل - {}\n"
+"❃ إصدار البايثون - {}\n"
+"❃ إصدار التليثون - {}\n"
+"@SSSTlFd"
+)
 
 @callback("alive")
 async def alive(event):
-text = alive_txt.format(version, version)
+text = alive_txt.format(TEPTHON_VERSION, TELETHON_VERSION)
 await event.answer(text, alert=True)
 
 @Tepthon_cmd(pattern="فحص( (.*)|$)")
 async def alive_func(e):
-match = e.pattern_match.group(1).strip()
-inline = None
+match = (e.pattern_match.group(1) or "").strip()
+inline = False
+
 if match in ["انلاين", "إنلاين"]:
-try:
-res = await e.client.inline_query(tgbot.me.username, "alive")
-return await res[0].click(e.chat_id)
-except BotMethodInvalidError:
-pass
-except BaseException as er:
-LOGS.exception(er)
-inline = True
+    try:
+        res = await e.client.inline_query(tgbot.me.username, "alive")
+        if res:
+            return await res[0].click(e.chat_id)
+    except BotMethodInvalidError:
+        inline = True
+    except Exception as er:
+        LOGS.exception(er)
+        inline = True
+
 OWNER_NAME = jmubot.me.first_name
 
-pic = jmdB.get_key("ALIVE_PIC") or "https://envs.sh/GsK.jpg"  
-if isinstance(pic, list):  
-    pic = choice(pic)  
-uptime = time_formatter((time.time() - start_time) * 1000)  
-if inline:  
-    parse = html  
-    als = in_alive.format(  
-        version,  
-        python_version(),  
-        uptime  
-    )  
+pic = jmdB.get_key("ALIVE_PIC") or "https://envs.sh/GsK.jpg"
+if isinstance(pic, list) and pic:
+    pic = choice(pic)
 
-    if _e := jmdB.get_key("ALIVE_EMOJI"):  
-        als = als.replace("𖠇", _e)  
-else:  
-    parse = markdown  
-    als = alive_1.format(  
-            OWNER_NAME,  
-            version,  
-            uptime,  
-            python_version(),  
-            __version__  
-            )  
+uptime = time_formatter((time.time() - start_time) * 1000)
 
-    if a := jmdB.get_key("ALIVE_EMOJI"):  
-        als = als.replace("𖠇", a)  
-if pic:  
-    try:  
-        await e.reply(  
-            als,  
-            file=pic,  
-            parse_mode=parse,  
-            link_preview=False,  
-            buttons=buttons if inline else None,  
-        )  
-        return await e.try_delete()  
-    except ChatSendMediaForbiddenError:  
-        pass  
-    except BaseException as er:  
-        LOGS.exception(er)  
-        try:  
-            await e.reply(file=pic)  
-            await e.reply(  
-                als,  
-                parse_mode=parse,  
-                buttons=buttons if inline else None,  
-                link_preview=False,  
-            )  
-            return await e.try_delete()  
-        except BaseException as er:  
-            LOGS.exception(er)  
-await e.eor(  
-    als,  
-    parse_mode=parse,  
-    link_preview=False,  
-    buttons=buttons if inline else None,  
+if inline:
+    parse = html
+    als = in_alive.format(
+        "سورس النسرالاسود يعمل بنجاح ✅",
+        TEPTHON_VERSION,
+        python_version(),
+        uptime,
+    )
+
+    if emoji := jmdB.get_key("ALIVE_EMOJI"):
+        als = als.replace("❃", emoji)
+else:
+    parse = markdown
+    als = alive_1.format(
+        OWNER_NAME,
+        TEPTHON_VERSION,
+        uptime,
+        python_version(),
+        TELETHON_VERSION,
+    )
+
+    if emoji := jmdB.get_key("ALIVE_EMOJI"):
+        als = als.replace("❃", emoji)
+
+if pic:
+    try:
+        await e.reply(
+            als,
+            file=pic,
+            parse_mode=parse,
+            link_preview=False,
+            buttons=buttons if inline else None,
+        )
+        return await e.try_delete()
+
+    except ChatSendMediaForbiddenError:
+        pass
+
+    except Exception as er:
+        LOGS.exception(er)
+
+        try:
+            await e.reply(file=pic)
+
+            await e.reply(
+                als,
+                parse_mode=parse,
+                buttons=buttons if inline else None,
+                link_preview=False,
+            )
+
+            return await e.try_delete()
+
+        except Exception as er:
+            LOGS.exception(er)
+
+await e.eor(
+    als,
+    parse_mode=parse,
+    link_preview=False,
+    buttons=buttons if inline else None,
 )
 
 @in_pattern("alive", owner=True)
 async def inline_alive(e):
 pic = jmdB.get_key("ALIVE_PIC") or "https://envs.sh/Gsz.jpg"
-if isinstance(pic, list):
-pic = choice(pic)
+
+if isinstance(pic, list) and pic:
+    pic = choice(pic)
+
 uptime = time_formatter((time.time() - start_time) * 1000)
+
 als = in_alive.format(
-version, python_version(), uptime
+    "سورس النسرالاسود يعمل بنجاح ✅",
+    TEPTHON_VERSION,
+    python_version(),
+    uptime,
 )
 
-if _e := jmdB.get_key("ALIVE_EMOJI"):  
-    als = als.replace("❃", _e)  
-builder = e.builder  
-if pic:  
-    try:  
-        if ".jpg" in pic:  
-            results = [  
-                await builder.photo(  
-                    pic, text=als, parse_mode="html", buttons=buttons  
-                )  
-            ]  
-        else:  
-            if _pic := resolve_bot_file_id(pic):  
-                pic = _pic  
-                buttons.insert(  
-                    0, [Button.inline("Stats", data="alive")]  
-                )  
-            results = [  
-                await builder.document(  
-                    pic,  
-                    title="Inline Alive",  
-                    description="@Tepthon",  
-                    parse_mode="html",  
-                    buttons=buttons,  
-                )  
-            ]  
-        return await e.answer(results)  
-    except BaseException as er:  
-        LOGS.exception(er)  
-result = [  
-    await builder.article(  
-        "Alive", text=als, parse_mode="html", link_preview=False, buttons=buttons  
-    )  
-]  
+if emoji := jmdB.get_key("ALIVE_EMOJI"):
+    als = als.replace("❃", emoji)
+
+# إنشاء نسخة محلية حتى لا تتكرر الأزرار عند كل استخدام
+local_buttons = [row[:] for row in buttons]
+builder = e.builder
+
+if pic:
+    try:
+        clean_pic = pic.split("?")[0].lower()
+
+        if clean_pic.endswith((".jpg", ".jpeg", ".png", ".webp")):
+            results = [
+                await builder.photo(
+                    pic,
+                    text=als,
+                    parse_mode="html",
+                    buttons=local_buttons,
+                )
+            ]
+
+        else:
+            if bot_file := resolve_bot_file_id(pic):
+                pic = bot_file
+                local_buttons.insert(
+                    0,
+                    [Button.inline("Stats", data="alive")],
+                )
+
+            results = [
+                await builder.document(
+                    pic,
+                    title="Inline Alive",
+                    description="@Tepthon",
+                    text=als,
+                    parse_mode="html",
+                    buttons=local_buttons,
+                )
+            ]
+
+        return await e.answer(results)
+
+    except Exception as er:
+        LOGS.exception(er)
+
+result = [
+    await builder.article(
+        "Alive",
+        text=als,
+        parse_mode="html",
+        link_preview=False,
+        buttons=local_buttons,
+    )
+]
+
 await e.answer(result)
 
 @Tepthon_cmd(pattern="بنك$")
 async def ping_cmd(event):
-start = datetime.now()
-ms = (datetime.now() - start).microseconds / 1000
-caption = f"<b><i>{JM_TXT}<i><b>\n<code>┏━━━━━━━┓\n┃ ✦ {ms}\n┃ ✦ <b>{jmubot.me.first_name}</b>\n┗━━━━━━━┛"
+start = time.perf_counter()
 
-await event.client.send_file(  
-    event.chat_id,  
-    PING_PIC,  
-    caption=caption,  
-    parse_mode="html",  
-    link_preview=False  
-)  
+try:
+    msg = await event.client.send_file(
+        event.chat_id,
+        PING_PIC,
+        caption=(
+            f"<b><i>{JM_TXT}</i></b>\n"
+            f"<code>┏━━━━━━━┓\n"
+            f"┃ ✦ جاري قياس السرعة...\n"
+            f"┃ ✦ <b>{jmubot.me.first_name}</b>\n"
+            f"┗━━━━━━━┛</code>"
+        ),
+        parse_mode="html",
+        link_preview=False,
+    )
+
+    ms = round((time.perf_counter() - start) * 1000, 2)
+
+    caption = (
+        f"<b><i>{JM_TXT}</i></b>\n"
+        f"<code>┏━━━━━━━┓\n"
+        f"┃ ✦ {ms} ms\n"
+        f"┃ ✦ <b>{jmubot.me.first_name}</b>\n"
+        f"┗━━━━━━━┛</code>"
+    )
+
+    await msg.edit(
+        caption=caption,
+        parse_mode="html",
+        link_preview=False,
+    )
+
+except Exception as er:
+    LOGS.exception(er)
+
+    ms = round((time.perf_counter() - start) * 1000, 2)
+
+    await event.respond(
+        f"<b><i>{JM_TXT}</i></b>\n\n"
+        f"<b>سرعة الاستجابة:</b> <code>{ms} ms</code>",
+        parse_mode="html",
+    )
+
 return await event.delete()

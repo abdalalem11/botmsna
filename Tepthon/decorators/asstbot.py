@@ -20,9 +20,9 @@ OWNER = jmubot.full_name
 CWD = Path.cwd()
 
 MSG = f"""
-**⎆ بـوت تيبثــون 🧸♥️**
+**⎆ بـوت النسرالاسود 🧸♥️**
 ❃ **المالك**: [{OWNER}](tg://user?id={jmubot.uid})
-◙ قنــاة الســورس: @Tepthon
+◙ قنــاة الســورس: @SSSTlFd
 """
 
 
@@ -57,9 +57,9 @@ def callback(data=None, from_users=[], admins=False, owner=False, **kwargs):
             if admins and not await admin_check(event):
                 return
             if from_users and event.sender_id not in from_users:
-                return await event.answer("هذه ليست لك نصب تيبثون بنفسك من @Tepthon", alert=True)
+                return await event.answer("هذه ليست لك نصب النسرالاسود بنفسك من @Tepthon", alert=True)
             if owner and event.sender_id not in owner_and_sudos():
-                return await event.answer(f"هذا هو بوت تيبثون الخاص بـ {OWNER} تابعنا @Tepthon")
+                return await event.answer(f"هذا هو بوت النسرالاسود الخاص بـ {OWNER} تابعنا @Tepthon")
             try:
                 await func(event)
             except Exception as er:
@@ -78,16 +78,16 @@ def in_pattern(pattern=None, owner=False, button=None, **kwargs):
                     [
                         Button.url(
                             "⎆ قنـاة السورس",
-                            url="https://t.me/Tepthon",
+                            url="https://t.me/SSSTlFd",
                         ),
-                        Button.url("مجموعة تيبثون", url="https://t.me/Tepthon_Support"),
+                        Button.url("مجموعة النسر الاسود ", url="https://t.me/SSSTlFd"),
                     ]
                 ]
 
                 res = [
                     await event.builder.article(
-                        title="سورس تيبثون",
-                        url="https://t.me/Tepthon",
+                        title="سورس النسر الاسود ",
+                        url="https://t.me/SSSTlFd",
                         description="(c) Tepthon",
                         text=MSG,
                         thumb=InputWebDocument(
@@ -130,7 +130,7 @@ def in_pattern(pattern=None, owner=False, button=None, **kwargs):
                                 title="- مشكلة غير متوقعة!!!",
                                 text=graphLink,
                                 buttons=Button.url(
-                                    "أبلغ المطـور", "https://t.me/zxaax"
+                                    "أبلغ المطـور", "https://t.me/SSSTlF"
                                 ),
                             )
                         ]

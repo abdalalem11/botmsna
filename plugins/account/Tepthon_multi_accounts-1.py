@@ -472,6 +472,11 @@ if __name__ == "__main__":
 
         log_file = _log_path(name)
 
+        log_file.parent.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
         log_handle = open(
             log_file,
             "a",
@@ -733,6 +738,8 @@ if __name__ == "__main__":
 
             if code is not None:
 
+                _children.pop(name, None)
+
                 return await status.edit(
                     f"**⎆ `{name}` توقف ❌**\n\n"
                     f"Exit code: `{code}`\n\n"
@@ -901,7 +908,130 @@ if __name__ == "__main__":
                         f"راجع {_log_path(name)}"
                     )
 
+                    value = _children.pop(
+                        name,
+                        None
+                    )
+
+                    if value:
+
+                        try:
+                            value[1].close()
+                        except Exception:
+                            pass
+
                 else:
 
                     LOGS.info(
-                        f"🟢 الحساب {name}
+                        f"🟢 الحساب {name} يعمل"
+                    )
+
+            except Exception as exc:
+
+                LOGS.error(
+                    f"❌ فشل تشغيل الحساب {name}: "
+                    f"{type(exc).__name__}: {exc}"
+                )
+
+        LOGS.info(
+            "✅ انتهى فحص الحسابات الإضافية"
+        )
+
+
+    # =====================================================
+    # مراقبة العمليات
+    # =====================================================
+
+    async def _monitor_accounts():
+
+        while True:
+
+            await asyncio.sleep(30)
+
+            for name, value in list(
+                _children.items()
+            ):
+
+                proc, log_handle = value
+
+                code = proc.poll()
+
+                if code is None:
+                    continue
+
+                LOGS.warning(
+                    f"⚠️ الحساب {name} توقف "
+                    f"(exit={code})"
+                )
+
+                try:
+                    log_handle.close()
+                except Exception:
+                    pass
+
+                _children.pop(
+                    name,
+                    None
+                )
+
+
+    # =====================================================
+    # بدء النظام
+    # =====================================================
+
+    async def _startup():
+
+        try:
+
+            asyncio.create_task(
+                _auto_start()
+            )
+
+            asyncio.create_task(
+                _monitor_accounts()
+            )
+
+            LOGS.info(
+                "✅ تم تشغيل نظام الحسابات الإضافية"
+            )
+
+        except Exception as exc:
+
+            LOGS.error(
+                f"❌ خطأ تشغيل نظام الحسابات: {exc}"
+            )
+
+
+    # =====================================================
+    # محاولة ربط التشغيل مع بوت Tepthon
+    # =====================================================
+
+    try:
+
+        loop = asyncio.get_event_loop()
+
+        if loop.is_running():
+
+            loop.create_task(
+                _startup()
+            )
+
+        else:
+
+            asyncio.run(
+                _startup()
+            )
+
+    except Exception as exc:
+
+        try:
+            LOGS.error(
+                f"❌ فشل بدء Multi Accounts: {exc}"
+            )
+        except Exception:
+            pass
+
+
+# =========================================================
+# نهاية الملف
+# =========================================================

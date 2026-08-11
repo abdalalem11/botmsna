@@ -3,10 +3,10 @@
     لـ عرض آخر أسطر من عملية التنصيب وعرض سجل العمليات
 
 ❃ `{i}اعادة تشغيل`
-    لـ إعـادة تشغيل سورس تيبثون
+    لـ إعـادة تشغيل سورس النسر الاسود
 
 ❃ `{i}تحديث`
-    لـ تحديث سورس تيبثون من GitHub
+    لـ تحديث سورس النسرالاسود من GitHub
 
 © @SSSTlF
 """
@@ -55,7 +55,7 @@ async def logs_Tepthon(event):
 @Tepthon_cmd(pattern="اعادة تشغيل$")
 async def restart_Tepthon(event):
     await event.eor(
-        "⎆ جاري إعادة تشغيل سورس تيبثون.....\n\n"
+        "⎆ جاري إعادة تشغيل سورس النسرالاسود.....\n\n"
         "© @SSSTlF"
     )
 
@@ -71,7 +71,7 @@ async def restart_Tepthon(event):
 async def update_Tepthon(event):
 
     msg = await event.eor(
-        "**⎆ جاري التحقق من تحديثات سورس تيبثون...**\n\n"
+        "**⎆ جاري التحقق من تحديثات سورس النسر الاسود...**\n\n"
         "© @SSSTlF"
     )
 
@@ -85,13 +85,13 @@ async def update_Tepthon(event):
 
     if process.returncode != 0:
         return await msg.edit(
-            "**❌ فشل تحديث سورس تيبثون.**\n\n"
+            "**❌ فشل تحديث سورس النسر الاسود.**\n\n"
             f"`{process.stderr[-1500:]}`\n\n"
             "© @SSSTlF"
         )
 
     await msg.edit(
-        "**✅ تم تحديث سورس تيبثون بنجاح.**\n\n"
+        "**✅ تم تحديث سورس النسر الاسود بنجاح.**\n\n"
         "⎆ جاري إعادة التشغيل...\n\n"
         "© @SSSTlF"
     )

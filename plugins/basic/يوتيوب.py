@@ -1,14 +1,17 @@
 """
-◙ `{i}تنزيل` <اسم المقطع>
+◙ `{i}يوت` <اسم المقطع>
 
 مثال:
-.تنزيل سورة الكهف
+.يوت سورة الكهف
+.يوت احبك
 
-طريقة العمل:
-1. يرسل البحث إلى @lN_3_Obot
-2. ينتظر الصوت الذي يرسله البوت
-3. يعيد إرسال الصوت للمستخدم مباشرة
-4. يضيف حقوق SSSTlFd
+يتم البحث عن المقطع عبر:
+@lN_3_Obot
+
+ثم إرسال الصوت مباشرة.
+
+حقوق:
+@SSSTlF
 """
 
 import asyncio
@@ -17,21 +20,28 @@ from .. import Tepthon_cmd, LOGS
 
 
 # =========================================================
-# البوت الذي تتم منه عملية البحث
+# بوت البحث
 # =========================================================
 
 SEARCH_BOT = "@lN_3_Obot"
 
 
 # =========================================================
-# أمر التنزيل
-#
-# مثال:
-# .تنزيل سورة الكهف
+# حقوق السورس
 # =========================================================
 
-@Tepthon_cmd(pattern=r"تنزيل(?:\s+(.+))?$")
-async def download_audio(event):
+OWNER_USERNAME = "@SSSTlF"
+OWNER_URL = "https://t.me/SSSTlF"
+
+
+# =========================================================
+# أمر البحث
+#
+# .يوت سورة الكهف
+# =========================================================
+
+@Tepthon_cmd(pattern=r"يوت(?:\s+(.+))?$")
+async def youtube_search(event):
 
     query = (
         event.pattern_match.group(1)
@@ -39,31 +49,40 @@ async def download_audio(event):
     ).strip()
 
     # =====================================================
-    # التحقق من اسم البحث
+    # التحقق من وجود بحث
     # =====================================================
 
     if not query:
 
         return await event.eor(
-            "⎆ اكتب اسم المقطع بعد الأمر\n\n"
-            "مثال:\n"
-            ".تنزيل سورة الكهف"
+            "<b>╭─「 يــوت 」─╮</b>\n\n"
+            "<b>اكتب اسم المقطع بعد الأمر</b>\n\n"
+            "<b>مثال:</b>\n"
+            "<b>.يوت سورة الكهف</b>\n"
+            "<b>.يوت احبك</b>\n\n"
+            f'<b>╰─ <a href="{OWNER_URL}">{OWNER_USERNAME}</a> ─╯</b>',
+            parse_mode="html"
         )
 
     # =====================================================
-    # رسالة الانتظار
+    # رسالة البحث
     # =====================================================
 
     status = await event.eor(
-        f"⎆ جاري البحث عن:\n"
-        f"「 {query} 」\n\n"
-        "⏳ انتظر قليلًا..."
+        "<b>╭─「 يــوت 」─╮</b>\n\n"
+        "<b>⌕ جاري البحث عن المقطع</b>\n\n"
+        f"<b>♪ {query}</b>\n\n"
+        "<b>⏳ انتظر قليلًا...</b>\n\n"
+        f'<b>╰─ <a href="{OWNER_URL}">{OWNER_USERNAME}</a> ─╯</b>',
+        parse_mode="html"
     )
+
+    sent = None
 
     try:
 
         # =================================================
-        # فتح محادثة البوت
+        # الحصول على بوت البحث
         # =================================================
 
         bot = await event.client.get_entity(
@@ -71,7 +90,7 @@ async def download_audio(event):
         )
 
         # =================================================
-        # إرسال البحث
+        # إرسال البحث للبوت
         # =================================================
 
         sent = await event.client.send_message(
@@ -85,7 +104,7 @@ async def download_audio(event):
 
         audio_message = None
 
-        for _ in range(30):
+        for _ in range(40):
 
             await asyncio.sleep(1)
 
@@ -96,27 +115,29 @@ async def download_audio(event):
 
             for message in messages:
 
-                # تجاهل رسالة البحث نفسها
-                if (
-                    message.id
-                    == sent.id
-                ):
+                # تجاهل رسالة البحث
+                if sent and message.id == sent.id:
                     continue
 
                 # =================================================
-                # التأكد أن الرسالة تحتوي على ملف صوتي
+                # رسالة صوت
+                # =================================================
+
+                if message.audio:
+
+                    audio_message = message
+                    break
+
+                # =================================================
+                # ملف صوتي
                 # =================================================
 
                 if (
-                    message.audio
-                    or
-                    (
-                        message.document
-                        and message.file
-                        and message.file.mime_type
-                        and message.file.mime_type.startswith(
-                            "audio/"
-                        )
+                    message.document
+                    and message.file
+                    and message.file.mime_type
+                    and message.file.mime_type.startswith(
+                        "audio/"
                     )
                 ):
 
@@ -126,54 +147,65 @@ async def download_audio(event):
             if audio_message:
                 break
 
-        # =================================================
-        # لم يصل الصوت
-        # =================================================
+        # =====================================================
+        # إذا لم يصل الصوت
+        # =====================================================
 
         if not audio_message:
 
             return await status.eor(
-                "❌ لم يصل الصوت من البوت.\n\n"
-                "تأكد أن @lN_3_Obot يرسل الصوت مباشرة "
-                "بعد أمر البحث."
+                "<b>╭─「 يــوت 」─╮</b>\n\n"
+                "<b>❌ لم يتم العثور على المقطع</b>\n\n"
+                "<b>حاول كتابة اسم الأغنية بشكل أوضح.</b>\n\n"
+                f'<b>╰─ <a href="{OWNER_URL}">{OWNER_USERNAME}</a> ─╯</b>',
+                parse_mode="html"
             )
 
-        # =================================================
+        # =====================================================
         # إرسال الصوت للمستخدم
-        # =================================================
+        # =====================================================
 
         await event.client.send_file(
             event.chat_id,
             audio_message.media,
+
             caption=(
-                "🎵 <b>تم العثور على المقطع</b>\n\n"
-                "© <b>SSSTlFd</b>"
+                "<b>🎵 تم العثور على المقطع</b>\n\n"
+                f"<b>♪ {query}</b>\n\n"
+                f'<b>© <a href="{OWNER_URL}">{OWNER_USERNAME}</a></b>'
             ),
+
             parse_mode="html",
+
             voice_note=False,
+
             supports_streaming=True,
         )
 
-        # =================================================
+        # =====================================================
         # حذف رسالة الانتظار
-        # =================================================
+        # =====================================================
 
         try:
             await status.delete()
         except BaseException:
             pass
 
-        # =================================================
+        # =====================================================
         # حذف رسالة البحث من الخاص
-        # =================================================
+        # =====================================================
 
-        try:
-            await event.client.delete_messages(
-                bot,
-                sent.id
-            )
-        except BaseException:
-            pass
+        if sent:
+
+            try:
+
+                await event.client.delete_messages(
+                    bot,
+                    sent.id
+                )
+
+            except BaseException:
+                pass
 
     except Exception as er:
 
@@ -182,10 +214,13 @@ async def download_audio(event):
         try:
 
             await status.eor(
-                "❌ حدث خطأ أثناء الاتصال ببوت البحث.\n\n"
-                f"<code>{er}</code>",
+                "<b>╭─「 يــوت 」─╮</b>\n\n"
+                "<b>❌ حدث خطأ أثناء البحث</b>\n\n"
+                f"<b><code>{er}</code></b>\n\n"
+                f'<b>╰─ <a href="{OWNER_URL}">{OWNER_USERNAME}</a> ─╯</b>',
                 parse_mode="html"
             )
 
         except BaseException:
+
             pass

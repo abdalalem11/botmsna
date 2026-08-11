@@ -2,7 +2,7 @@
 ❃ `{i}فحص`
     لـ عرض حالة سورس النسرالاسود والإصدار ووقت التشغيل
 
-❃ ملاحظة: يمكنك وضع أو تغيير الصورة من خلال البوت المساعد الخاص بك
+❃ ملاحظة: يمكنك وضع أو تغيير الفيديو من خلال البوت المساعد الخاص بك
 
 ❃ `{i}بنك`
     أمر تجريبي لتجربة السورس
@@ -38,7 +38,15 @@ alive_txt = """
 """
 
 
-PING_PIC = jmdB.get_key("PING_PIC") or "https://t.me/Tepthon/12?single"
+# صورة أمر بنك
+PING_PIC = (
+    jmdB.get_key("PING_PIC")
+    or "https://i.ibb.co/gLZ8ZQVT/Gsz.jpg"
+)
+
+# فيديو أمر فحص
+ALIVE_VIDEO = "https://files.catbox.moe/aghgg7.mp4"
+
 JM_TXT = "لا تحزن لأن الله معك ♥️"
 
 
@@ -75,25 +83,30 @@ async def alive_func(e):
 
     if match in ["انلاين", "إنلاين"]:
         try:
-            res = await e.client.inline_query(tgbot.me.username, "alive")
+            res = await e.client.inline_query(
+                tgbot.me.username,
+                "alive",
+            )
             return await res[0].click(e.chat_id)
+
         except BotMethodInvalidError:
             inline = False
+
         except BaseException as er:
             LOGS.exception(er)
             inline = False
 
     OWNER_NAME = jmubot.me.first_name or "المالك"
 
-    pic = (
-        jmdB.get_key("ALIVE_PIC")
-        or "https://i.ibb.co/gLZ8ZQVT/Gsz.jpg"
-    )
+    # فيديو الفحص
+    pic = ALIVE_VIDEO
 
     if isinstance(pic, list) and pic:
         pic = choice(pic)
 
-    uptime = time_formatter((time.time() - start_time) * 1000)
+    uptime = time_formatter(
+        (time.time() - start_time) * 1000
+    )
 
     if inline:
         parse = html
@@ -105,6 +118,7 @@ async def alive_func(e):
         )
 
         emoji = jmdB.get_key("ALIVE_EMOJI")
+
         if emoji:
             als = als.replace("❃", emoji)
 
@@ -120,6 +134,7 @@ async def alive_func(e):
         )
 
         emoji = jmdB.get_key("ALIVE_EMOJI")
+
         if emoji:
             als = als.replace("❃", emoji)
 
@@ -132,6 +147,7 @@ async def alive_func(e):
                 link_preview=False,
                 buttons=buttons if inline else None,
             )
+
             return await e.try_delete()
 
         except ChatSendMediaForbiddenError:
@@ -165,15 +181,15 @@ async def alive_func(e):
 
 @in_pattern("alive", owner=True)
 async def inline_alive(e):
-    pic = (
-        jmdB.get_key("ALIVE_PIC")
-        or "https://i.ibb.co/gLZ8ZQVT/Gsz.jpg"
-    )
+    # فيديو الفحص الإنلاين
+    pic = ALIVE_VIDEO
 
     if isinstance(pic, list) and pic:
         pic = choice(pic)
 
-    uptime = time_formatter((time.time() - start_time) * 1000)
+    uptime = time_formatter(
+        (time.time() - start_time) * 1000
+    )
 
     als = in_alive.format(
         version,
@@ -182,6 +198,7 @@ async def inline_alive(e):
     )
 
     emoji = jmdB.get_key("ALIVE_EMOJI")
+
     if emoji:
         als = als.replace("❃", emoji)
 
@@ -189,10 +206,15 @@ async def inline_alive(e):
 
     if pic:
         try:
-            if str(pic).lower().endswith((".jpg", ".jpeg", ".png")):
+            if str(pic).lower().split("?")[0].endswith(".mp4"):
+
                 results = [
-                    await builder.photo(
+                    await builder.document(
                         pic,
+                        title="Alive Video",
+                        description="@SSSTlFd",
+                        type="video",
+                        mime_type="video/mp4",
                         text=als,
                         parse_mode="html",
                         buttons=buttons,
@@ -200,29 +222,15 @@ async def inline_alive(e):
                 ]
 
             else:
-                resolved_pic = resolve_bot_file_id(pic)
-
-                if resolved_pic:
-                    results = [
-                        await builder.document(
-                            resolved_pic,
-                            title="Inline Alive",
-                            description="@SSSTlFd",
-                            text=als,
-                            parse_mode="html",
-                            buttons=buttons,
-                        )
-                    ]
-                else:
-                    results = [
-                        await builder.article(
-                            "Alive",
-                            text=als,
-                            parse_mode="html",
-                            link_preview=False,
-                            buttons=buttons,
-                        )
-                    ]
+                results = [
+                    await builder.article(
+                        "Alive",
+                        text=als,
+                        parse_mode="html",
+                        link_preview=False,
+                        buttons=buttons,
+                    )
+                ]
 
             return await e.answer(results)
 
@@ -248,7 +256,9 @@ async def ping_cmd(event):
 
     await event.client.get_me()
 
-    ms = (datetime.now() - start).total_seconds() * 1000
+    ms = (
+        datetime.now() - start
+    ).total_seconds() * 1000
 
     caption = (
         f"<b><i>{JM_TXT}</i></b>\n"
@@ -261,6 +271,7 @@ async def ping_cmd(event):
     )
 
     try:
+        # إرسال صورة البنك من الرابط المباشر
         await event.client.send_file(
             event.chat_id,
             PING_PIC,
@@ -268,9 +279,13 @@ async def ping_cmd(event):
             parse_mode="html",
             link_preview=False,
         )
+
     except BaseException as er:
+        LOGS.exception(er)
+
         return await event.eor(
-            f"<b>خطأ في إرسال صورة البنك:</b>\n<code>{er}</code>",
+            f"<b>خطأ في إرسال صورة البنك:</b>\n"
+            f"<code>{er}</code>",
             parse_mode="html",
         )
 

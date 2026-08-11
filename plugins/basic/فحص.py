@@ -6,25 +6,28 @@
     لعرض حالة السورس بشكل Inline
 
 ❃ `{i}ا`
-    لعرض معلومات الحساب وصورته
+    لعرض معلومات الحساب وصورته الحالية
 
 ❃ ملاحظة:
     صورة الفحص يمكن تغييرها من خلال ALIVE_PIC
 """
 
 import time
+from io import BytesIO
 from platform import python_version
-from random import choice
 
 from Tepthon.config import version
-from telethon.errors import BotMethodInvalidError, ChatSendMediaForbiddenError
-from telethon.extensions import html, markdown
+from telethon.errors import BotMethodInvalidError
+from telethon.extensions import markdown
 from telethon.version import __version__
 
 from .. import *
 
 
+# =========================================================
 # أزرار الفحص
+# =========================================================
+
 buttons = [
     [
         Button.url("مجموعة المساعدة", "https://t.me/SSSTlFd"),
@@ -33,7 +36,10 @@ buttons = [
 ]
 
 
+# =========================================================
 # نص الفحص العادي
+# =========================================================
+
 alive_1 = (
     "**سورس النسرالاسود يعمل بنجاح ✅**\n\n"
     "❃ **مالك الحساب** - `{}`\n"
@@ -45,9 +51,12 @@ alive_1 = (
 )
 
 
+# =========================================================
 # نص الفحص Inline
+# =========================================================
+
 in_alive = (
-    "{}\n\n"
+    "سورس النسرالاسود يعمل بنجاح ✅\n\n"
     "❃ <b>إصدار النسرالاسود -></b> <code>{}</code>\n"
     "❃ <b>إصدار البايثون -></b> <code>{}</code>\n"
     "❃ <b>مدة التشغيل -></b> <code>{}</code>\n\n"
@@ -55,15 +64,24 @@ in_alive = (
 )
 
 
+# =========================================================
 # فيديو الفحص
+# =========================================================
+
 ALIVE_VIDEO = "https://files.catbox.moe/aghgg7.mp4"
 
 
-# صورة بديلة إذا احتجتها
+# =========================================================
+# صورة الفحص الاحتياطية
+# =========================================================
+
 ALIVE_PIC = "https://i.ibb.co/gLZ8ZQVT/Gsz.jpg"
 
 
-# رسالة callback
+# =========================================================
+# رسالة Callback
+# =========================================================
+
 alive_txt = """
 **سورس النسرالاسود يعمـل بنجـاح .. ✅**
 
@@ -72,114 +90,178 @@ alive_txt = """
 """
 
 
-# أمر callback للفحص
+# =========================================================
+# Callback للفحص
+# =========================================================
+
 @callback("alive")
 async def alive(event):
-    text = alive_txt.format(version, __version__)
-    await event.answer(text, alert=True)
+
+    text = alive_txt.format(
+        version,
+        __version__,
+    )
+
+    await event.answer(
+        text,
+        alert=True,
+    )
 
 
 # =========================================================
 # أمر الفحص
+#
+# .فحص
+# .فحص انلاين
 # =========================================================
 
 @Tepthon_cmd(pattern="فحص( (.*)|$)")
 async def alive_func(e):
 
-    match = (e.pattern_match.group(1) or "").strip()
-    inline = False
+    match = (
+        e.pattern_match.group(1) or ""
+    ).strip()
 
-    # فحص انلاين
+    # =====================================================
+    # فحص Inline
+    # =====================================================
+
     if match in ["انلاين", "إنلاين"]:
 
         try:
+
             res = await e.client.inline_query(
                 tgbot.me.username,
-                "alive"
+                "alive",
             )
 
-            return await res[0].click(e.chat_id)
+            if res:
+                return await res[0].click(
+                    e.chat_id
+                )
 
         except BotMethodInvalidError:
-            inline = False
-
-        except BaseException as er:
-            LOGS.exception(er)
-            inline = False
-
-    # اسم صاحب الحساب
-    OWNER_NAME = jmubot.me.first_name or "المالك"
-
-    # مدة التشغيل
-    uptime = time_formatter(
-        (time.time() - start_time) * 1000
-    )
-
-    # ==========================================
-    # الفحص العادي
-    # ==========================================
-
-    if not inline:
-
-        parse = markdown
-
-        als = alive_1.format(
-            OWNER_NAME,
-            version,
-            uptime,
-            python_version(),
-            __version__,
-        )
-
-        emoji = jmdB.get_key("ALIVE_EMOJI")
-
-        if emoji:
-            als = als.replace("❃", emoji)
-
-        try:
-            # إرسال الفيديو مباشرة
-            await e.reply(
-                als,
-                file=ALIVE_VIDEO,
-                parse_mode=parse,
-                link_preview=False,
-                buttons=None,
-            )
-
-            return await e.try_delete()
-
-        except ChatSendMediaForbiddenError:
             pass
 
         except BaseException as er:
             LOGS.exception(er)
 
-            # إذا فشل الفيديو، جرب الصورة
-            try:
+    # =====================================================
+    # جلب اسم صاحب الحساب
+    # =====================================================
 
-                await e.reply(
-                    als,
-                    file=ALIVE_PIC,
-                    parse_mode=parse,
-                    link_preview=False,
-                    buttons=None,
-                )
+    try:
 
-                return await e.try_delete()
+        me = await e.client.get_me()
 
-            except BaseException as er:
-                LOGS.exception(er)
+        owner_name = (
+            me.first_name
+            or "المالك"
+        )
 
-    # ==========================================
-    # إذا لم ينجح إرسال الوسائط
-    # ==========================================
+    except BaseException:
 
-    await e.eor(
-        als,
-        parse_mode=parse,
-        link_preview=False,
-        buttons=buttons if inline else None,
+        owner_name = "المالك"
+
+    # =====================================================
+    # مدة التشغيل
+    # =====================================================
+
+    uptime = time_formatter(
+        (time.time() - start_time) * 1000
     )
+
+    # =====================================================
+    # تجهيز نص الفحص
+    # =====================================================
+
+    als = alive_1.format(
+        owner_name,
+        version,
+        uptime,
+        python_version(),
+        __version__,
+    )
+
+    # =====================================================
+    # الإيموجي المخصص
+    # =====================================================
+
+    emoji = jmdB.get_key(
+        "ALIVE_EMOJI"
+    )
+
+    if emoji:
+        als = als.replace(
+            "❃",
+            emoji,
+        )
+
+    # =====================================================
+    # إرسال فيديو الفحص
+    # =====================================================
+
+    try:
+
+        await e.reply(
+            als,
+            file=ALIVE_VIDEO,
+            parse_mode=markdown,
+            link_preview=False,
+            buttons=None,
+        )
+
+        try:
+            await e.delete()
+        except BaseException:
+            pass
+
+        return
+
+    except BaseException as er:
+
+        LOGS.exception(er)
+
+    # =====================================================
+    # إذا فشل الفيديو يتم إرسال الصورة
+    # =====================================================
+
+    try:
+
+        await e.reply(
+            als,
+            file=ALIVE_PIC,
+            parse_mode=markdown,
+            link_preview=False,
+            buttons=None,
+        )
+
+        try:
+            await e.delete()
+        except BaseException:
+            pass
+
+        return
+
+    except BaseException as er:
+
+        LOGS.exception(er)
+
+    # =====================================================
+    # آخر حل: إرسال النص فقط
+    # =====================================================
+
+    try:
+
+        await e.eor(
+            als,
+            parse_mode=markdown,
+            link_preview=False,
+        )
+
+    except BaseException as er:
+
+        LOGS.exception(er)
 
 
 # =========================================================
@@ -189,9 +271,17 @@ async def alive_func(e):
 @in_pattern("alive", owner=True)
 async def inline_alive(e):
 
+    # =====================================================
+    # مدة التشغيل
+    # =====================================================
+
     uptime = time_formatter(
         (time.time() - start_time) * 1000
     )
+
+    # =====================================================
+    # نص Inline
+    # =====================================================
 
     als = in_alive.format(
         version,
@@ -199,16 +289,29 @@ async def inline_alive(e):
         uptime,
     )
 
-    emoji = jmdB.get_key("ALIVE_EMOJI")
+    # =====================================================
+    # الإيموجي
+    # =====================================================
+
+    emoji = jmdB.get_key(
+        "ALIVE_EMOJI"
+    )
 
     if emoji:
-        als = als.replace("❃", emoji)
+
+        als = als.replace(
+            "❃",
+            emoji,
+        )
 
     builder = e.builder
 
+    # =====================================================
+    # محاولة عرض الفيديو
+    # =====================================================
+
     try:
 
-        # عرض الفيديو في Inline
         results = [
             await builder.video(
                 ALIVE_VIDEO,
@@ -219,47 +322,73 @@ async def inline_alive(e):
             )
         ]
 
-        return await e.answer(results)
+        return await e.answer(
+            results
+        )
 
     except BaseException as er:
 
         LOGS.exception(er)
 
-        # محاولة الصورة كبديل
-        try:
+    # =====================================================
+    # محاولة عرض الصورة
+    # =====================================================
 
-            results = [
-                await builder.photo(
-                    ALIVE_PIC,
-                    text=als,
-                    parse_mode="html",
-                    buttons=buttons,
-                )
-            ]
+    try:
 
-            return await e.answer(results)
+        results = [
+            await builder.photo(
+                ALIVE_PIC,
+                text=als,
+                parse_mode="html",
+                buttons=buttons,
+            )
+        ]
 
-        except BaseException as er:
-
-            LOGS.exception(er)
-
-    # آخر حل: رسالة نصية
-    result = [
-        await builder.article(
-            "Alive",
-            text=als,
-            parse_mode="html",
-            link_preview=False,
-            buttons=buttons,
+        return await e.answer(
+            results
         )
-    ]
 
-    await e.answer(result)
+    except BaseException as er:
+
+        LOGS.exception(er)
+
+    # =====================================================
+    # آخر حل: نتيجة نصية
+    # =====================================================
+
+    try:
+
+        result = [
+            await builder.article(
+                "Alive",
+                text=als,
+                parse_mode="html",
+                link_preview=False,
+                buttons=buttons,
+            )
+        ]
+
+        return await e.answer(
+            result
+        )
+
+    except BaseException as er:
+
+        LOGS.exception(er)
 
 
 # =========================================================
 # أمر معلومات الحساب
-# الأمر: .ا
+#
+# .ا
+#
+# يعرض:
+# الاسم
+# الآيدي
+# اليوزر
+# الرتبة
+# صورة الحساب الحالية
 # =========================================================
 
 @Tepthon_cmd(pattern="ا$")
@@ -267,13 +396,25 @@ async def account_info(event):
 
     try:
 
+        # =================================================
         # جلب الحساب الحالي
+        # =================================================
+
         me = await event.client.get_me()
 
+        # =================================================
         # الاسم
-        first_name = me.first_name or ""
+        # =================================================
 
-        last_name = me.last_name or ""
+        first_name = (
+            me.first_name
+            or ""
+        )
+
+        last_name = (
+            me.last_name
+            or ""
+        )
 
         full_name = (
             f"{first_name} {last_name}"
@@ -282,19 +423,36 @@ async def account_info(event):
         if not full_name:
             full_name = "لا يوجد"
 
+        # =================================================
         # الآيدي
+        # =================================================
+
         user_id = me.id
 
+        # =================================================
         # اليوزر
+        # =================================================
+
         if me.username:
-            username = f"@{me.username}"
+
+            username = (
+                f"@{me.username}"
+            )
+
         else:
+
             username = "لا يوجد"
 
-        # رتبة صاحب السورس
+        # =================================================
+        # الرتبة
+        # =================================================
+
         rank = "مبرمج السورس"
 
-        # البطاقة
+        # =================================================
+        # بطاقة معلومات الحساب
+        # =================================================
+
         caption = (
             "╭─〔 معلومات الحساب 〕─╮\n\n"
             f"👤 الاسم : {full_name}\n"
@@ -304,51 +462,86 @@ async def account_info(event):
             "╰────────────────╯"
         )
 
-        # ==========================================
-        # جلب صورة الحساب الحالية مباشرة
-        # ==========================================
+        # =================================================
+        # جلب صورة الحساب الحالية
+        # =================================================
 
-        profile_photo = await event.client.download_profile_photo(
-            me,
-            file=bytes,
+        profile_photo = (
+            await event.client.download_profile_photo(
+                me,
+                file=bytes,
+            )
         )
 
-        # ==========================================
-        # إذا يوجد صورة
-        # ==========================================
+        # =================================================
+        # إذا الحساب لديه صورة
+        # =================================================
 
         if profile_photo:
 
-            await event.client.send_file(
-                event.chat_id,
-                profile_photo,
-                caption=caption,
-                parse_mode="html",
+            # تحويل البيانات إلى ملف ذاكرة
+            image = BytesIO(
+                profile_photo
             )
 
-        # ==========================================
-        # إذا لا توجد صورة
-        # ==========================================
+            # مهم:
+            # إعطاء الملف امتداد صورة
+            image.name = "profile.jpg"
+
+            # =================================================
+            # إرسال الصورة كصورة Telegram مباشرة
+            # =================================================
+
+            await event.client.send_file(
+                event.chat_id,
+                image,
+                caption=caption,
+                force_document=False,
+                supports_streaming=False,
+            )
+
+        # =================================================
+        # إذا الحساب بدون صورة
+        # =================================================
 
         else:
 
             await event.reply(
-                caption,
-                parse_mode="html",
+                caption
             )
 
-        # حذف أمر .ا
+        # =================================================
+        # حذف رسالة .ا
+        # =================================================
+
         try:
+
             await event.delete()
+
         except BaseException:
+
             pass
 
     except BaseException as er:
 
+        # =================================================
+        # تسجيل الخطأ في اللوج
+        # =================================================
+
         LOGS.exception(er)
 
-        await event.eor(
-            f"<b>حدث خطأ أثناء جلب معلومات الحساب:</b>\n"
-            f"<code>{er}</code>",
-            parse_mode="html",
-        )
+        # =================================================
+        # إظهار الخطأ للمستخدم
+        # =================================================
+
+        try:
+
+            await event.eor(
+                "<b>حدث خطأ أثناء جلب معلومات الحساب:</b>\n"
+                f"<code>{er}</code>",
+                parse_mode="html",
+            )
+
+        except BaseException:
+
+            pass

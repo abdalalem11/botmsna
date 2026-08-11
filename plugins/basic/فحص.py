@@ -85,7 +85,10 @@ async def alive_func(e):
 
     OWNER_NAME = jmubot.me.first_name or "المالك"
 
-    pic = jmdB.get_key("ALIVE_PIC") or "https://envs.sh/GsK.jpg"
+    pic = (
+        jmdB.get_key("ALIVE_PIC")
+        or "https://i.ibb.co/gLZ8ZQVT/Gsz.jpg"
+    )
 
     if isinstance(pic, list) and pic:
         pic = choice(pic)
@@ -162,7 +165,10 @@ async def alive_func(e):
 
 @in_pattern("alive", owner=True)
 async def inline_alive(e):
-    pic = jmdB.get_key("ALIVE_PIC") or "https://envs.sh/Gsz.jpg"
+    pic = (
+        jmdB.get_key("ALIVE_PIC")
+        or "https://i.ibb.co/gLZ8ZQVT/Gsz.jpg"
+    )
 
     if isinstance(pic, list) and pic:
         pic = choice(pic)

@@ -1,12 +1,13 @@
 """
 ◙ `{i}تنزيل` <اسم المقطع>
-   البحث عن المقطع وتنزيله صوتيًا مباشرة.
+   يبحث عن المقطع تلقائيًا ثم ينزله صوتيًا ويرسله مباشرة.
 
 مثال:
 .تنزيل سورة الكهف
 .تنزيل اسم الأغنية
 
-يتم وضع حقوق SSSTlFd مع كل ملف.
+حقوق الملفات:
+SSSTlFd
 """
 
 import os
@@ -15,10 +16,6 @@ from yt_dlp import YoutubeDL
 
 from .. import Tepthon_cmd
 
-
-# =========================================================
-# إعدادات التحميل
-# =========================================================
 
 DOWNLOAD_DIR = os.path.join(
     tempfile.gettempdir(),
@@ -31,12 +28,6 @@ os.makedirs(
 )
 
 
-# =========================================================
-# أمر التنزيل
-#
-# .تنزيل سورة الكهف
-# =========================================================
-
 @Tepthon_cmd(pattern=r"تنزيل(?:\s+(.+))?$")
 async def download_audio(event):
 
@@ -45,26 +36,17 @@ async def download_audio(event):
         or ""
     ).strip()
 
-    # =====================================================
-    # التأكد من وجود بحث
-    # =====================================================
-
     if not query:
-
         return await event.eor(
             "⎆ اكتب اسم المقطع بعد الأمر\n\n"
             "مثال:\n"
             ".تنزيل سورة الكهف"
         )
 
-    # =====================================================
-    # رسالة الانتظار
-    # =====================================================
-
     msg = await event.eor(
         f"⎆ جاري البحث عن:\n"
         f"「 {query} 」\n\n"
-        "يرجى الانتظار..."
+        "⏳ يرجى الانتظار..."
     )
 
     output_template = os.path.join(
@@ -72,25 +54,13 @@ async def download_audio(event):
         "%(id)s.%(ext)s"
     )
 
-    # =====================================================
-    # إعدادات yt-dlp
-    # =====================================================
-
     ytd = {
         "format": "bestaudio/best",
-
         "noplaylist": True,
-
         "quiet": True,
-
         "no_warnings": True,
-
-        "default_search": "ytsearch",
-
         "outtmpl": output_template,
-
         "geo_bypass": True,
-
         "nocheckcertificate": True,
 
         "postprocessors": [
@@ -98,7 +68,7 @@ async def download_audio(event):
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",
                 "preferredquality": "128",
-            }
+            },
         ],
 
         "postprocessor_args": [
@@ -116,40 +86,40 @@ async def download_audio(event):
     try:
 
         # =================================================
-        # البحث في يوتيوب
+        # البحث عن أول نتيجة
         # =================================================
 
-        search_query = f"ytsearch1:{query}"
+        search_query = (
+            f"ytsearch1:{query}"
+        )
 
-        with YoutubeDL(ytd) as ydl:
+        def download():
 
-            info = await event.client.loop.run_in_executor(
-                None,
-                lambda: ydl.extract_info(
+            with YoutubeDL(ytd) as ydl:
+
+                return ydl.extract_info(
                     search_query,
                     download=True
                 )
-            )
+
+        info = await event.client.loop.run_in_executor(
+            None,
+            download
+        )
 
         if not info:
 
             return await msg.eor(
-                "⎆ لم يتم العثور على نتيجة."
+                "⎆ لم يتم العثور على المقطع."
             )
 
         # =================================================
-        # الحصول على نتيجة البحث
+        # الحصول على النتيجة
         # =================================================
 
-        if "entries" in info:
+        entries = info.get("entries")
 
-            entries = info.get("entries")
-
-            if not entries:
-
-                return await msg.eor(
-                    "⎆ لم يتم العثور على المقطع."
-                )
+        if entries:
 
             video = entries[0]
 
@@ -157,73 +127,62 @@ async def download_audio(event):
 
             video = info
 
-        # =================================================
-        # معلومات المقطع
-        # =================================================
+        if not video:
+
+            return await msg.eor(
+                "⎆ لم يتم العثور على نتيجة."
+            )
 
         title = (
             video.get("title")
             or query
         )
 
-        video_id = video.get(
-            "id"
-        )
+        video_id = video.get("id")
 
         # =================================================
-        # البحث عن الملف الناتج
+        # العثور على الملف
         # =================================================
-
-        possible_files = []
 
         if video_id:
 
-            for ext in [
+            for ext in (
                 "mp3",
                 "m4a",
                 "webm",
                 "opus",
-            ]:
+            ):
 
                 path = os.path.join(
                     DOWNLOAD_DIR,
                     f"{video_id}.{ext}"
                 )
 
-                if os.path.exists(path):
+                if os.path.isfile(path):
 
-                    possible_files.append(
-                        path
-                    )
+                    downloaded_file = path
+                    break
 
         # =================================================
-        # اختيار الملف
+        # البحث الاحتياطي عن الملف
         # =================================================
 
-        if possible_files:
+        if not downloaded_file:
 
-            downloaded_file = (
-                possible_files[0]
-            )
+            files = []
 
-        else:
+            for name in os.listdir(
+                DOWNLOAD_DIR
+            ):
 
-            # البحث عن آخر ملف تم إنشاؤه
-            files = [
-                os.path.join(
+                path = os.path.join(
                     DOWNLOAD_DIR,
-                    f
+                    name
                 )
-                for f in os.listdir(
-                    DOWNLOAD_DIR
-                )
-            ]
 
-            files = [
-                f
-                for f in files
-                if os.path.isfile(f)
-            ]
+                if os.path.isfile(path):
+
+                    files.append(path)
 
             if files:
 
@@ -233,33 +192,18 @@ async def download_audio(event):
                 )
 
         # =================================================
-        # التأكد من الملف
+        # لم يتم إنشاء الملف
         # =================================================
 
         if not downloaded_file:
 
             return await msg.eor(
-                "⎆ تعذر العثور على الملف بعد التحميل."
+                "⎆ تم العثور على المقطع، "
+                "لكن تعذر إنشاء الملف الصوتي."
             )
 
         # =================================================
-        # اسم الملف وحقوق السورس
-        # =================================================
-
-        safe_title = (
-            title
-            .replace("/", "_")
-            .replace("\\", "_")
-            .replace(":", "_")
-            .strip()
-        )
-
-        filename = (
-            f"{safe_title} - SSSTlFd.mp3"
-        )
-
-        # =================================================
-        # إرسال الصوت مباشرة
+        # إرسال الملف مباشرة
         # =================================================
 
         await msg.eor(
@@ -272,12 +216,11 @@ async def download_audio(event):
             downloaded_file,
             caption=(
                 f"🎵 <b>{title}</b>\n\n"
-                f"© <b>SSSTlFd</b>"
+                "© <b>SSSTlFd</b>"
             ),
             parse_mode="html",
             voice_note=False,
             supports_streaming=True,
-            attributes=[],
         )
 
         # =================================================
@@ -285,22 +228,42 @@ async def download_audio(event):
         # =================================================
 
         try:
-
             await msg.delete()
-
         except BaseException:
-
             pass
 
     except Exception as er:
 
         LOGS.exception(er)
 
+        error_text = str(er).lower()
+
+        # =================================================
+        # خطأ YouTube الخاص بالتحقق
+        # =================================================
+
+        if (
+            "sign in to confirm" in error_text
+            or "not a bot" in error_text
+        ):
+
+            text = (
+                "⎆ تعذر تنزيل المقطع من YouTube.\n\n"
+                "يوتيوب طلب التحقق من الطلب، "
+                "لذلك لم يتمكن السورس من إكمال التنزيل."
+            )
+
+        else:
+
+            text = (
+                "⎆ حدث خطأ أثناء البحث أو التحميل.\n\n"
+                f"<code>{er}</code>"
+            )
+
         try:
 
             await msg.eor(
-                "⎆ حدث خطأ أثناء البحث أو التحميل.\n\n"
-                f"<code>{er}</code>",
+                text,
                 parse_mode="html"
             )
 
@@ -311,7 +274,7 @@ async def download_audio(event):
     finally:
 
         # =================================================
-        # حذف الملف من السيرفر
+        # حذف الملف بعد الإرسال
         # =================================================
 
         if downloaded_file:

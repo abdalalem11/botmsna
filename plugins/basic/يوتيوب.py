@@ -168,22 +168,19 @@ async def youtube_search(event):
         await event.client.send_file(
             event.chat_id,
             audio_message.media,
-
             caption=(
                 "<b>🎵 تم العثور على المقطع</b>\n\n"
                 f"<b>♪ {query}</b>\n\n"
                 f'<b>© <a href="{OWNER_URL}">{OWNER_USERNAME}</a></b>'
             ),
-
             parse_mode="html",
-
             voice_note=False,
-
             supports_streaming=True,
         )
 
         # =====================================================
-        # حذف رسالة الانتظار
+        # حذف رسالة "جاري البحث"
+        # بعد نجاح إرسال الصوت
         # =====================================================
 
         try:
@@ -198,12 +195,10 @@ async def youtube_search(event):
         if sent:
 
             try:
-
                 await event.client.delete_messages(
                     bot,
                     sent.id
                 )
-
             except BaseException:
                 pass
 

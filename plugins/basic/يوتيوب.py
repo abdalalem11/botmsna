@@ -1,88 +1,331 @@
 """
-◙ `{i}تحميل صوتي` <(رابط يوتيوب/او أي رابط)>
-   لـ تحميل الملف بشكل ملف صوتي في التليجرام، يمكنك وضع رابط أي منصة
+◙ `{i}تنزيل` <اسم المقطع>
+   البحث عن المقطع وتنزيله صوتيًا مباشرة.
 
+مثال:
+.تنزيل سورة الكهف
+.تنزيل اسم الأغنية
 
-◙ `{i}تحميل فيد` <(رابط يوتيوب/او أي رابط)>
-   لـ تحميل الملف بشكل فيديو في التليجرام، يمكنك وضع رابط أي منصة
-
-
-◙ `{i}صوتي` <(عنوان)>
-   لـ تحميل الملف بشكل ملف صوتي في التليجرام من خلال العنوان فقط بدون رابط
-
+يتم وضع حقوق SSSTlFd مع كل ملف.
 """
 
-from .. import download_yt, get_yt_link, is_url_work, Tepthon_cmd
+import os
+import tempfile
+from yt_dlp import YoutubeDL
 
-ytd = {
-        "prefer_ffmpeg": True,
-        "addmetadata": True,
-        "geo-bypass": True,
+from .. import Tepthon_cmd
+
+
+# =========================================================
+# إعدادات التحميل
+# =========================================================
+
+DOWNLOAD_DIR = os.path.join(
+    tempfile.gettempdir(),
+    "tepthon_downloads"
+)
+
+os.makedirs(
+    DOWNLOAD_DIR,
+    exist_ok=True
+)
+
+
+# =========================================================
+# أمر التنزيل
+#
+# .تنزيل سورة الكهف
+# =========================================================
+
+@Tepthon_cmd(pattern=r"تنزيل(?:\s+(.+))?$")
+async def download_audio(event):
+
+    query = (
+        event.pattern_match.group(1)
+        or ""
+    ).strip()
+
+    # =====================================================
+    # التأكد من وجود بحث
+    # =====================================================
+
+    if not query:
+
+        return await event.eor(
+            "⎆ اكتب اسم المقطع بعد الأمر\n\n"
+            "مثال:\n"
+            ".تنزيل سورة الكهف"
+        )
+
+    # =====================================================
+    # رسالة الانتظار
+    # =====================================================
+
+    msg = await event.eor(
+        f"⎆ جاري البحث عن:\n"
+        f"「 {query} 」\n\n"
+        "يرجى الانتظار..."
+    )
+
+    output_template = os.path.join(
+        DOWNLOAD_DIR,
+        "%(id)s.%(ext)s"
+    )
+
+    # =====================================================
+    # إعدادات yt-dlp
+    # =====================================================
+
+    ytd = {
+        "format": "bestaudio/best",
+
+        "noplaylist": True,
+
+        "quiet": True,
+
+        "no_warnings": True,
+
+        "default_search": "ytsearch",
+
+        "outtmpl": output_template,
+
+        "geo_bypass": True,
+
         "nocheckcertificate": True,
-        "postprocessors": [{"key": "FFmpegMetadata"}],
-    }
 
-@Tepthon_cmd(pattern="تحميل صوتي (.*)")
-async def down_voic(event):
-    jmbot = await event.eor("⎆ جار التحميل يرجى الانتظار قليلًا")
-    ytd["format"] = "bestaudio"
-    ytd["outtmpl"] = "%(id)s.m4a"
-    ytd["postprocessors"].insert(
-            0,
+        "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
-                "preferredcodec": "m4a",
+                "preferredcodec": "mp3",
                 "preferredquality": "128",
-            },
-        )
-    url = event.pattern_match.group(1)
-    if not url:
-        return await jmbot.eor("⎆ يجب عليك وضع رابط للتحميل الصوتي")
+            }
+        ],
+
+        "postprocessor_args": [
+            "-metadata",
+            "artist=SSSTlFd",
+            "-metadata",
+            "album=SSSTlFd",
+            "-metadata",
+            "comment=SSSTlFd",
+        ],
+    }
+
+    downloaded_file = None
+
     try:
-        await is_url_work(url)
-    except BaseException:
-        return await jmbot.eor("⎆ يرجى وضع الرابط بشكل صحيح")
-    await download_yt(jmbot, url, ytd)
 
-@Tepthon_cmd(pattern="تحميل فيد (.*)")
-async def vidown(event):
-    jmbot = await event.eor("⎆ جار التحميل يرجى الانتظار قليلًا")
-    ytd["format"] = "best"
-    ytd["outtmpl"] = "%(id)s.mp4"
-    ytd["postprocessors"].insert(
-        0, {"key": "FFmpegVideoConvertor", "preferedformat": "mp4"}
+        # =================================================
+        # البحث في يوتيوب
+        # =================================================
+
+        search_query = f"ytsearch1:{query}"
+
+        with YoutubeDL(ytd) as ydl:
+
+            info = await event.client.loop.run_in_executor(
+                None,
+                lambda: ydl.extract_info(
+                    search_query,
+                    download=True
+                )
+            )
+
+        if not info:
+
+            return await msg.eor(
+                "⎆ لم يتم العثور على نتيجة."
+            )
+
+        # =================================================
+        # الحصول على نتيجة البحث
+        # =================================================
+
+        if "entries" in info:
+
+            entries = info.get("entries")
+
+            if not entries:
+
+                return await msg.eor(
+                    "⎆ لم يتم العثور على المقطع."
+                )
+
+            video = entries[0]
+
+        else:
+
+            video = info
+
+        # =================================================
+        # معلومات المقطع
+        # =================================================
+
+        title = (
+            video.get("title")
+            or query
         )
-    url = event.pattern_match.group(1)
-    print(url)
-    if not url:
-        return await jmbot.eor("⎆ يجب عليك وضع رابط لتحميل الفيديـو")
-    try:
-        await is_url_work(url)
-    except BaseException:
-        return await jmbot.eor("⎆ يرجى وضع الرابط بشكل صحيح")
-    await download_yt(jmbot, url, ytd)
 
+        video_id = video.get(
+            "id"
+        )
 
-@Tepthon_cmd(pattern="صوتي( (.*)|$)")
-async def sotea(event):
-    jmbot = await event.eor("⎆ جـاري التحميل يرجى الانتظار قليلًا")
-    ytd["format"] = "bestaudio"
-    ytd["outtmpl"] = "%(id)s.m4a"
-    ytd["postprocessors"].insert(
-        0,
-        {
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "m4a",
-            "preferredquality": "128",
-        },
-    )
-    query = event.pattern_match.group(2) if event.pattern_match.group(1) else None
-    if not query:
-        return await jmbot.eor("**⎆ يجب عليك تحديد ما تريد تحميله اكتب عنوان مع الأمـر**")
-    url = get_yt_link(query, ytd)
-    if not url:
-        return await jmbot.edit("**⎆ لم يتم العثور على الفيديو اكتب عنوان مفصل بشكل صحيح**")
-    await jmbot.eor("**⎆ جاري تحميل الملف الصوتي انتظـر قليـلًا....**")
-    await download_yt(jmbot, url, ytd)
+        # =================================================
+        # البحث عن الملف الناتج
+        # =================================================
 
+        possible_files = []
 
+        if video_id:
+
+            for ext in [
+                "mp3",
+                "m4a",
+                "webm",
+                "opus",
+            ]:
+
+                path = os.path.join(
+                    DOWNLOAD_DIR,
+                    f"{video_id}.{ext}"
+                )
+
+                if os.path.exists(path):
+
+                    possible_files.append(
+                        path
+                    )
+
+        # =================================================
+        # اختيار الملف
+        # =================================================
+
+        if possible_files:
+
+            downloaded_file = (
+                possible_files[0]
+            )
+
+        else:
+
+            # البحث عن آخر ملف تم إنشاؤه
+            files = [
+                os.path.join(
+                    DOWNLOAD_DIR,
+                    f
+                )
+                for f in os.listdir(
+                    DOWNLOAD_DIR
+                )
+            ]
+
+            files = [
+                f
+                for f in files
+                if os.path.isfile(f)
+            ]
+
+            if files:
+
+                downloaded_file = max(
+                    files,
+                    key=os.path.getmtime
+                )
+
+        # =================================================
+        # التأكد من الملف
+        # =================================================
+
+        if not downloaded_file:
+
+            return await msg.eor(
+                "⎆ تعذر العثور على الملف بعد التحميل."
+            )
+
+        # =================================================
+        # اسم الملف وحقوق السورس
+        # =================================================
+
+        safe_title = (
+            title
+            .replace("/", "_")
+            .replace("\\", "_")
+            .replace(":", "_")
+            .strip()
+        )
+
+        filename = (
+            f"{safe_title} - SSSTlFd.mp3"
+        )
+
+        # =================================================
+        # إرسال الصوت مباشرة
+        # =================================================
+
+        await msg.eor(
+            "⎆ تم العثور على المقطع ✅\n"
+            "⎆ جاري إرساله..."
+        )
+
+        await event.client.send_file(
+            event.chat_id,
+            downloaded_file,
+            caption=(
+                f"🎵 <b>{title}</b>\n\n"
+                f"© <b>SSSTlFd</b>"
+            ),
+            parse_mode="html",
+            voice_note=False,
+            supports_streaming=True,
+            attributes=[],
+        )
+
+        # =================================================
+        # حذف رسالة الانتظار
+        # =================================================
+
+        try:
+
+            await msg.delete()
+
+        except BaseException:
+
+            pass
+
+    except Exception as er:
+
+        LOGS.exception(er)
+
+        try:
+
+            await msg.eor(
+                "⎆ حدث خطأ أثناء البحث أو التحميل.\n\n"
+                f"<code>{er}</code>",
+                parse_mode="html"
+            )
+
+        except BaseException:
+
+            pass
+
+    finally:
+
+        # =================================================
+        # حذف الملف من السيرفر
+        # =================================================
+
+        if downloaded_file:
+
+            try:
+
+                if os.path.exists(
+                    downloaded_file
+                ):
+
+                    os.remove(
+                        downloaded_file
+                    )
+
+            except BaseException:
+
+                pass

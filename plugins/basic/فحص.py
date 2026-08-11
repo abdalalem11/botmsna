@@ -2,21 +2,20 @@
 ❃ `{i}فحص`
     لـ عرض حالة سورس النسرالاسود والإصدار ووقت التشغيل
 
-❃ ملاحظة: يمكنك وضع أو تغيير الفيديو من خلال البوت المساعد الخاص بك
+❃ `{i}فحص انلاين`
+    لعرض حالة السورس بالفيديو
 
-❃ `{i}بنك`
-    أمر تجريبي لتجربة السورس
+❃ `{i}ا`
+    لعرض معلومات الحساب ورتبة مبرمج السورس
 """
 
 import time
-from datetime import datetime
 from platform import python_version
 from random import choice
 
 from Tepthon.config import version
 from telethon.errors import BotMethodInvalidError, ChatSendMediaForbiddenError
 from telethon.extensions import html, markdown
-from telethon.utils import resolve_bot_file_id
 from telethon.version import __version__
 
 from .. import *
@@ -38,16 +37,8 @@ alive_txt = """
 """
 
 
-# صورة أمر بنك
-PING_PIC = (
-    jmdB.get_key("PING_PIC")
-    or "https://i.ibb.co/gLZ8ZQVT/Gsz.jpg"
-)
-
 # فيديو أمر فحص
 ALIVE_VIDEO = "https://files.catbox.moe/aghgg7.mp4"
-
-JM_TXT = "لا تحزن لأن الله معك ♥️"
 
 
 in_alive = (
@@ -98,7 +89,6 @@ async def alive_func(e):
 
     OWNER_NAME = jmubot.me.first_name or "المالك"
 
-    # فيديو الفحص
     pic = ALIVE_VIDEO
 
     if isinstance(pic, list) and pic:
@@ -181,7 +171,6 @@ async def alive_func(e):
 
 @in_pattern("alive", owner=True)
 async def inline_alive(e):
-    # فيديو الفحص الإنلاين
     pic = ALIVE_VIDEO
 
     if isinstance(pic, list) and pic:
@@ -250,43 +239,73 @@ async def inline_alive(e):
     await e.answer(result)
 
 
-@Tepthon_cmd(pattern="بنك$")
-async def ping_cmd(event):
-    start = datetime.now()
-
-    await event.client.get_me()
-
-    ms = (
-        datetime.now() - start
-    ).total_seconds() * 1000
-
-    caption = (
-        f"<b><i>{JM_TXT}</i></b>\n"
-        f"<code>"
-        f"┏━━━━━━━┓\n"
-        f"┃ ✦ {ms:.2f} ms\n"
-        f"┃ ✦ {jmubot.me.first_name}\n"
-        f"┗━━━━━━━┛"
-        f"</code>"
-    )
-
+@Tepthon_cmd(pattern="ا$")
+async def account_info(event):
     try:
-        # إرسال صورة البنك من الرابط المباشر
-        await event.client.send_file(
-            event.chat_id,
-            PING_PIC,
-            caption=caption,
-            parse_mode="html",
-            link_preview=False,
+        me = await event.client.get_me()
+
+        first_name = me.first_name or "غير معروف"
+        last_name = me.last_name or ""
+
+        full_name = (
+            f"{first_name} {last_name}"
+        ).strip()
+
+        user_id = me.id
+
+        username = (
+            f"@{me.username}"
+            if me.username
+            else "لا يوجد"
         )
+
+        rank = "مبرمج السورس"
+
+        caption = (
+            "<b>╭─〔 معلومات الحساب 〕─╮</b>\n\n"
+            f"👤 <b>الاسم :</b> <code>{full_name}</code>\n"
+            f"🆔 <b>الآيدي :</b> <code>{user_id}</code>\n"
+            f"🔗 <b>اليوزر :</b> <code>{username}</code>\n"
+            f"👑 <b>الرتبة :</b> <code>{rank}</code>\n\n"
+            "<b>╰────────────────╯</b>"
+        )
+
+        try:
+            profile = await event.client.download_profile_photo(
+                me,
+                file=bytes,
+            )
+
+            if profile:
+                await event.reply(
+                    profile,
+                    caption,
+                    parse_mode="html",
+                    link_preview=False,
+                )
+
+            else:
+                await event.reply(
+                    caption,
+                    parse_mode="html",
+                    link_preview=False,
+                )
+
+        except BaseException as er:
+            LOGS.exception(er)
+
+            await event.reply(
+                caption,
+                parse_mode="html",
+                link_preview=False,
+            )
+
+        return await event.try_delete()
 
     except BaseException as er:
         LOGS.exception(er)
 
         return await event.eor(
-            f"<b>خطأ في إرسال صورة البنك:</b>\n"
-            f"<code>{er}</code>",
+            "<b>حدث خطأ أثناء جلب معلومات الحساب.</b>",
             parse_mode="html",
         )
-
-    return await event.delete()
